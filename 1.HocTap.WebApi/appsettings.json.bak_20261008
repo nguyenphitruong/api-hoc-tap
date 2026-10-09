@@ -1,0 +1,23 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    //"DefaultConnection": "Host=localhost;Port=5432;Database=hoctap;Username=postgres;Password=postgres",
+    "DefaultConnection": "Server=ep-muddy-surf-azk8abby-pooler.c-3.ap-southeast-1.aws.neon.tech;port=5432;Database=hoctap;Username=neondb_owner;Password=npg_kjY1OdyJ2rmp;Timeout=60;Command Timeout=120;SSL Mode=Require;Trust Server Certificate=true; Include Error Detail=true; Pooling=true;MinPoolSize=10;MaxPoolSize=100;"
+  },
+  "Jwt": {
+    "Key": "",
+    "Issuer": "hoctap",
+    "Audience": "hoctap-web",
+    "AccessMinutes": 30,
+    "RefreshDays": 30
+  },
+  "Cors": { "Origins": [ "http://localhost:5174", "http://localhost:4173", "http://127.0.0.1:5173" ] },
+  "RateLimit": { "AuthPerMinute": 20 }
+}
