@@ -8,6 +8,8 @@ public class RegisterModel
     public string? Phone { get; set; }
     public string? Password { get; set; }
     public string? Device { get; set; }
+    public bool AcceptTerms { get; set; }          // 12/10/2026 - bắt buộc đồng ý điều khoản sử dụng
+    public string? TermsVersion { get; set; }      // 12/10/2026 - phiên bản điều khoản client đã hiển thị
 }
 
 /// <summary>08/10/2026 - Đăng nhập: Login là email hoặc số điện thoại</summary>

@@ -19,6 +19,7 @@ public class HocTapDbContext : DbContext
     public DbSet<assignment> assignment => Set<assignment>();                       // 08/10/2026 - giai đoạn 4
     public DbSet<assignment_student> assignment_student => Set<assignment_student>();
     public DbSet<plan_log> plan_log => Set<plan_log>();                             // 08/10/2026 - giai đoạn 5
+    public DbSet<payment_order> payment_order => Set<payment_order>();              // 12/10/2026 - gia hạn chuyển khoản QR
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -51,5 +52,12 @@ public class HocTapDbContext : DbContext
         });
         // 08/10/2026 - Giai đoạn 5: lịch sử gói (script sql-dump/20261008_hoctap_phase5.sql)
         b.Entity<plan_log>().ToTable("plan_log").HasKey(x => x.id);
+        // 12/10/2026 - Đơn gia hạn chuyển khoản QR (script sql-dump/20261012_hoctap_phase6.sql)
+        b.Entity<payment_order>(e =>
+        {
+            e.ToTable("payment_order").HasKey(x => x.id);
+            e.Property(x => x.amount).HasColumnType("numeric(12,0)");
+            e.Property(x => x.paidamount).HasColumnType("numeric(12,0)");
+        });
     }
 }

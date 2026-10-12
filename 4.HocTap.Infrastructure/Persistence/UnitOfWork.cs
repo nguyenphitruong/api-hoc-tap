@@ -3,6 +3,7 @@ using HocTap.Domain.Aggregates.Assignments;
 using HocTap.Domain.Aggregates.Attempts;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
+using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
 using HocTap.Domain.Bases;
 using HocTap.Infrastructure.Repositories;
 
@@ -92,6 +93,20 @@ public class UnitOfWork : IUnitOfWork
                 this.adminRepo = new AdminRepository(_context);
             }
             return adminRepo;
+        }
+    }
+
+    // 12/10/2026 - đơn gia hạn chuyển khoản QR
+    private IPaymentRepository? paymentRepo;
+    public IPaymentRepository PaymentRepo
+    {
+        get
+        {
+            if (this.paymentRepo == null)
+            {
+                this.paymentRepo = new PaymentRepository(_context);
+            }
+            return paymentRepo;
         }
     }
 

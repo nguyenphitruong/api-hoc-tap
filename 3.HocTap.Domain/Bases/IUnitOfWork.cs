@@ -3,6 +3,7 @@ using HocTap.Domain.Aggregates.Assignments;
 using HocTap.Domain.Aggregates.Attempts;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
+using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
 
 namespace HocTap.Domain.Bases;
 
@@ -19,6 +20,7 @@ public interface IUnitOfWork
     IAttemptRepository AttemptRepo { get; }
     IAssignmentRepository AssignmentRepo { get; }
     IAdminRepository AdminRepo { get; }
+    IPaymentRepository PaymentRepo { get; }   // 12/10/2026 - đơn gia hạn chuyển khoản QR
 
     void InitTransaction();
     void Save();

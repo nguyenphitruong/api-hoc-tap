@@ -53,6 +53,7 @@ public class AuthServices : IAuthServices
         if (password.Length < 6 || password.Length > 100) throw new LogicException("Mật khẩu từ 6 đến 100 ký tự.");
         if (email != null && unitOfWork.UserRepo.GetUserByEmail(email) != null) throw new LogicException("Email đã được đăng ký.");
         if (phone != null && unitOfWork.UserRepo.GetUserByPhone(phone) != null) throw new LogicException("Số điện thoại đã được đăng ký.");
+        if (!i_model.AcceptTerms) throw new LogicException("Vui lòng đọc và đồng ý Điều khoản sử dụng trước khi đăng ký.");   // 12/10/2026
 
         // 2. Tài khoản mới: dùng thử 14 ngày
         DateTime now = clock.UtcNow;
@@ -67,6 +68,8 @@ public class AuthServices : IAuthServices
         user.trialend = now.AddDays(HocTapConst.TRIAL_DAYS);
         user.lastlogin = now;
         user.timecr = now;
+        user.termsversion = string.IsNullOrWhiteSpace(i_model.TermsVersion) ? HocTapConst.TERMS_VERSION : i_model.TermsVersion.Trim()[..Math.Min(20, i_model.TermsVersion.Trim().Length)];   // 12/10/2026
+        user.termsacceptedat = now;
 
         // 3. Lưu tài khoản + cấp token
         try

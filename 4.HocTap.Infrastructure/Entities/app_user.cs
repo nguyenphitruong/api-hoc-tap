@@ -15,4 +15,6 @@ public class app_user
     public DateTime? lastlogin { get; set; }
     public DateTime timecr { get; set; }
     public DateTime? timeup { get; set; }
+    public string? termsversion { get; set; }       // 12/10/2026 - phiên bản điều khoản đã đồng ý khi đăng ký
+    public DateTime? termsacceptedat { get; set; }
 }

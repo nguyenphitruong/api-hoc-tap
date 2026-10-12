@@ -4,6 +4,7 @@ using HocTap.Application.Attempts;
 using HocTap.Application.Auth;
 using HocTap.Application.Commons;
 using HocTap.Application.Students;
+using HocTap.Application.Payments;   // 12/10/2026
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HocTap.Application;
@@ -23,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IAttemptServices, AttemptServices>();
         services.AddScoped<IAssignmentServices, AssignmentServices>();
         services.AddScoped<IAdminServices, AdminServices>();
+        services.AddScoped<IPaymentServices, PaymentServices>();   // 12/10/2026 - gia hạn chuyển khoản QR (PaymentOptions đăng ký ở Program)
         return services;
     }
 }

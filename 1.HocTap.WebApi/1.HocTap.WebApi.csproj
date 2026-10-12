@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>HocTap.WebApi</RootNamespace>
     <AssemblyName>HocTap.WebApi</AssemblyName>
+    <UserSecretsId>1c59bd35-b32e-4440-89f8-dfba36960e4b</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />

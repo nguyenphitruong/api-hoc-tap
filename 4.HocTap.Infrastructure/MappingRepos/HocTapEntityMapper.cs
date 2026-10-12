@@ -3,6 +3,7 @@ using HocTap.Domain.Aggregates.Assignments;
 using HocTap.Domain.Aggregates.Attempts;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
+using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
 using HocTap.Infrastructure.Entities;
 
 namespace HocTap.Infrastructure.MappingRepos;
@@ -30,6 +31,8 @@ public static class HocTapEntityMapper
         _Result.lastlogin = i_source.lastlogin;
         _Result.timecr = i_source.timecr;
         _Result.timeup = i_source.timeup;
+        _Result.termsversion = i_source.termsversion;         // 12/10/2026
+        _Result.termsacceptedat = i_source.termsacceptedat;
         return _Result;
     }
 
@@ -49,6 +52,8 @@ public static class HocTapEntityMapper
         _Result.lastlogin = i_source.lastlogin;
         _Result.timecr = i_source.timecr;
         _Result.timeup = i_source.timeup;
+        _Result.termsversion = i_source.termsversion;         // 12/10/2026
+        _Result.termsacceptedat = i_source.termsacceptedat;
         return _Result;
     }
 
@@ -305,6 +310,52 @@ public static class HocTapEntityMapper
         _Result.note = i_source.note;
         _Result.adminid = i_source.adminid;
         _Result.timecr = i_source.timecr;
+        return _Result;
+    }
+
+    /// <summary>12/10/2026 - payment_order -> PaymentOrderModel (gán từng cột)</summary>
+    public static PaymentOrderModel ToModel(payment_order i_source)
+    {
+        PaymentOrderModel _Result = new PaymentOrderModel();
+        _Result.id = i_source.id;
+        _Result.code = i_source.code;
+        _Result.userid = i_source.userid;
+        _Result.plancode = i_source.plancode;
+        _Result.months = i_source.months;
+        _Result.amount = i_source.amount;
+        _Result.status = i_source.status;
+        _Result.paidamount = i_source.paidamount;
+        _Result.gateway = i_source.gateway;
+        _Result.txnref = i_source.txnref;
+        _Result.txncontent = i_source.txncontent;
+        _Result.planfrom = i_source.planfrom;
+        _Result.planto = i_source.planto;
+        _Result.timecr = i_source.timecr;
+        _Result.paidat = i_source.paidat;
+        _Result.timeup = i_source.timeup;
+        return _Result;
+    }
+
+    /// <summary>12/10/2026 - PaymentOrderModel -> payment_order (gán từng cột)</summary>
+    public static payment_order ToEntity(PaymentOrderModel i_source)
+    {
+        payment_order _Result = new payment_order();
+        _Result.id = i_source.id;
+        _Result.code = i_source.code;
+        _Result.userid = i_source.userid;
+        _Result.plancode = i_source.plancode;
+        _Result.months = i_source.months;
+        _Result.amount = i_source.amount;
+        _Result.status = i_source.status;
+        _Result.paidamount = i_source.paidamount;
+        _Result.gateway = i_source.gateway;
+        _Result.txnref = i_source.txnref;
+        _Result.txncontent = i_source.txncontent;
+        _Result.planfrom = i_source.planfrom;
+        _Result.planto = i_source.planto;
+        _Result.timecr = i_source.timecr;
+        _Result.paidat = i_source.paidat;
+        _Result.timeup = i_source.timeup;
         return _Result;
     }
 }

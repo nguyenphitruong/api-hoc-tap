@@ -31,6 +31,8 @@ public class Program
 
         builder.Services.AddHocTapInfrastructure(conn);
         builder.Services.AddHocTapApplication(jwt);
+        // 12/10/2026 - Thanh toán gia hạn: tài khoản nhận tiền, bảng giá, khoá webhook SePay (appsettings "Payment" / biến môi trường Payment__...)
+        builder.Services.AddSingleton(cfg.GetSection("Payment").Get<HocTap.Application.Payments.PaymentOptions>() ?? new HocTap.Application.Payments.PaymentOptions());
         builder.Services.AddControllers();
 
         // Lỗi dữ liệu đầu vào (JSON sai kiểu) cũng trả về { code, message }

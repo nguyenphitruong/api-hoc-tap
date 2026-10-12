@@ -57,4 +57,16 @@ public static class HocTapConst
     public const int PLAN_MAX_MONTHS = 36;
     public const int PLAN_MAX_TRIAL_DAYS = 90;
     public const int STATS_DAYS = 30;
+
+    // ===== 12/10/2026 - Gia hạn bằng chuyển khoản QR (payment_order) + điều khoản sử dụng =====
+    public const string PLAN_PAYMENT = "THANHTOAN";     // plan_log.action: gia hạn do thanh toán (tự động qua webhook / admin xác nhận)
+    public const string PAY_PENDING = "CHOTT";          // payment_order.status: chờ thanh toán
+    public const string PAY_PAID = "DATT";              // đã thanh toán, đã cộng hạn
+    public const string PAY_CANCELLED = "HUY";          // dự phòng (huỷ đơn)
+    public const string PAY_EXPIRED = "HETHAN";         // tính khi đọc: chờ thanh toán quá PAY_ORDER_HOURS giờ
+    public const int PAY_ORDER_HOURS = 24;              // đơn chờ thanh toán còn hiệu lực bao lâu (QR)
+    public const string PAY_CODE_PREFIX = "HT";         // mã đơn = nội dung chuyển khoản: HT + 8 ký tự
+    public const int PAY_CODE_LENGTH = 8;
+    public const string PAY_GATEWAY_ADMIN = "ADMIN";    // admin xác nhận tay
+    public const string TERMS_VERSION = "2026-10-12";   // phiên bản điều khoản hiện hành (app_user.termsversion)
 }
