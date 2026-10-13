@@ -9,7 +9,7 @@ namespace HocTap.Application.Students;
 
 /// <summary>
 /// 08/10/2026 - HỒ SƠ CON (viết tường minh theo mẫu Web-MultiClinic)
-/// - Tối đa 4 hồ sơ còn hoạt động / tài khoản; tên gọi 1–24 ký tự, không trùng trong tài khoản; lớp 2 hoặc 6.
+/// - Tối đa 4 hồ sơ còn hoạt động / tài khoản; tên gọi 1–24 ký tự, không trùng trong tài khoản; lớp 2–9 (13/10/2026: HocTapConst.GRADES).
 /// - PIN 4 chữ số (BCrypt), tuỳ chọn. Xoá = ẩn (active = false), lịch sử học vẫn giữ.
 /// - Học sinh (phiên HOCSINH) được xem danh sách để đổi hồ sơ, không được thêm / sửa / xoá.
 /// Luồng ghi: kiểm tra -> InitTransaction -> unitOfWork.StudentRepo.Insert/Update -> Save -> Commit; lỗi -> Rollback.
@@ -36,7 +36,7 @@ public class StudentServices : IStudentServices
         List<StudentProfileModel> lstStudent = unitOfWork.StudentRepo.GetListStudentByUser(i_caller.UserId);
         foreach (StudentProfileModel student in lstStudent)
         {
-            lstResult.Add(StudentReadModel.From(student));
+            lstResult.Add(StudentReadModel.From(student, clock.UtcNow));   // 13/10/2026: kèm ngày được đổi lớp
         }
         return lstResult;
     }
@@ -50,7 +50,7 @@ public class StudentServices : IStudentServices
         ServiceGuard.EnsureParent(i_caller);
         string nickName = ValidateNickName(i_caller, i_model, null);
         string avatar = NormalizeAvatar(i_model.Avatar);
-        if (!HocTapConst.GRADES.Contains(i_model.Grade)) throw new LogicException("Lớp chỉ được chọn 2 hoặc 6.");
+        if (!HocTapConst.GRADES.Contains(i_model.Grade)) throw new LogicException(HocTapConst.GRADE_INVALID);   // 13/10/2026
         if (unitOfWork.StudentRepo.CountActiveStudent(i_caller.UserId) >= HocTapConst.MAX_PROFILES)
         {
             throw new LogicException($"Mỗi tài khoản tối đa {HocTapConst.MAX_PROFILES} hồ sơ học sinh.");
@@ -95,15 +95,32 @@ public class StudentServices : IStudentServices
         StudentProfileModel student = ServiceGuard.GetOwnedStudent(unitOfWork, i_caller, i_id);
         string nickName = ValidateNickName(i_caller, i_model, i_id);
         string avatar = NormalizeAvatar(i_model.Avatar);
-        if (i_model.Grade != 0 && !HocTapConst.GRADES.Contains(i_model.Grade)) throw new LogicException("Lớp chỉ được chọn 2 hoặc 6.");
+        if (i_model.Grade != 0 && !HocTapConst.GRADES.Contains(i_model.Grade)) throw new LogicException(HocTapConst.GRADE_INVALID);   // 13/10/2026
+
+        // 13/10/2026: giới hạn đổi lớp (PlanRules.GradeLockedUntil) — gói học theo con × môn, không theo lớp
+        DateTime now = clock.UtcNow;
+        bool gradeChanged = i_model.Grade != 0 && i_model.Grade != student.grade;
+        if (gradeChanged)
+        {
+            DateTime? lockedUntil = PlanRules.GradeLockedUntil(student, now);
+            if (lockedUntil.HasValue)
+            {
+                throw new LogicException($"Mỗi hồ sơ chỉ đổi lớp 1 lần trong {HocTapConst.GRADE_CHANGE_DAYS} ngày. "
+                    + $"{student.nickname} được đổi lớp từ ngày {lockedUntil.Value.ToLocalTime():dd/MM/yyyy}.");
+            }
+        }
 
         // 2. Gán giá trị mới
         student.nickname = nickName;
         student.avatar = avatar;
-        if (i_model.Grade != 0) student.grade = i_model.Grade;
+        if (gradeChanged)
+        {
+            student.grade = i_model.Grade;
+            if (now >= student.timecr.AddDays(HocTapConst.GRADE_FIX_DAYS)) student.gradechangedat = now;   // tuần đầu sửa nhầm lớp: không tính lượt
+        }
         if (i_model.ClearPin) student.pinhash = null;
         else if (!string.IsNullOrEmpty(i_model.Pin)) student.pinhash = passwordHasher.Hash(i_model.Pin);
-        student.timeup = clock.UtcNow;
+        student.timeup = now;
 
         // 3. Lưu
         try
@@ -119,7 +136,7 @@ public class StudentServices : IStudentServices
             throw;
         }
 
-        _Result = StudentReadModel.From(student);
+        _Result = StudentReadModel.From(student, now);
         return _Result;
     }
 

@@ -16,4 +16,5 @@ public class StudentProfileModel
     public bool active { get; set; }
     public DateTime timecr { get; set; }
     public DateTime? timeup { get; set; }
+    public DateTime? gradechangedat { get; set; }       // 13/10/2026 - lần đổi lớp gần nhất (giới hạn đổi lớp, xem PlanRules)
 }

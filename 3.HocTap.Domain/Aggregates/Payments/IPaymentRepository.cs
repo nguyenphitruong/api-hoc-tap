@@ -13,4 +13,12 @@ public interface IPaymentRepository
     PaymentOrderModel? GetLastPendingOrder(Guid i_userId, string i_planCode);
     /// <summary>Danh sách đơn (mới nhất trước) kèm thông tin phụ huynh; i_status rỗng = tất cả</summary>
     List<PaymentOrderRow> GetListOrder(string? i_status, int i_max);
+
+    // ===== 13/10/2026 - Hạn học theo hồ sơ con × môn (student_plan) =====
+    /// <summary>Hạn học của mọi hồ sơ con CÒN HOẠT ĐỘNG thuộc tài khoản</summary>
+    List<StudentPlanModel> GetListStudentPlanByUser(Guid i_userId);
+    /// <summary>Hạn học của 1 hồ sơ con (0–2 dòng)</summary>
+    List<StudentPlanModel> GetListStudentPlan(Guid i_studentId);
+    /// <summary>Thêm mới hoặc cập nhật hạn (studentid + subject); Service gọi unitOfWork.Save()</summary>
+    void UpsertStudentPlan(StudentPlanModel i_plan);
 }

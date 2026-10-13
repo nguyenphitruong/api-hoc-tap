@@ -22,6 +22,27 @@ public class PaymentOrderModel
     public DateTime timecr { get; set; }
     public DateTime? paidat { get; set; }
     public DateTime? timeup { get; set; }
+    public Guid? studentid { get; set; }                // 13/10/2026 - hồ sơ con được gia hạn (null = đơn cũ: áp dụng mọi con, mọi môn)
+    public string? subjects { get; set; }               // 13/10/2026 - môn được gia hạn, nối bằng dấu phẩy: "toan" | "anh" | "anh,toan"
+}
+
+/// <summary>13/10/2026 - Model bảng student_plan: hạn học của 1 hồ sơ con cho 1 môn (khoá chính studentid + subject)</summary>
+public class StudentPlanModel
+{
+    public Guid studentid { get; set; }
+    public string subject { get; set; } = "";           // toan | anh
+    public DateTime planend { get; set; }
+    public DateTime timecr { get; set; }
+    public DateTime? timeup { get; set; }
+}
+
+/// <summary>13/10/2026 - Hạn học 1 con × 1 môn trả client (trang phụ huynh, khoá môn ở phiên học sinh)</summary>
+public class StudentPlanReadModel
+{
+    public Guid StudentId { get; set; }
+    public string Subject { get; set; } = "";
+    public DateTime PlanEnd { get; set; }
+    public bool Active { get; set; }
 }
 
 /// <summary>12/10/2026 - 1 gói gia hạn (cấu hình Payment:Plans trong appsettings)</summary>
@@ -32,6 +53,7 @@ public class PlanPackageReadModel
     public int Months { get; set; }
     public decimal Price { get; set; }
     public string? Note { get; set; }
+    public int Subjects { get; set; } = 2;              // 13/10/2026 - số môn của gói: 1 (chọn Toán hoặc Anh) | 2 (cả 2 môn)
 }
 
 /// <summary>12/10/2026 - Bảng giá + thông tin nhận tiền (công khai: trang giới thiệu, hộp thoại gia hạn)</summary>
@@ -49,6 +71,8 @@ public class PaymentConfigReadModel
 public class CreatePaymentOrderModel
 {
     public string? PlanCode { get; set; }
+    public Guid? StudentId { get; set; }                // 13/10/2026 - con được gia hạn (bắt buộc)
+    public List<string>? Subjects { get; set; }         // 13/10/2026 - môn: đúng bằng số môn của gói
 }
 
 /// <summary>12/10/2026 - Đơn gia hạn trả về client (kèm ảnh QR VietQR để quét chuyển khoản)</summary>
@@ -70,6 +94,9 @@ public class PaymentOrderReadModel
     public DateTime ExpiresAt { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime? PlanTo { get; set; }               // hạn gói mới sau khi thanh toán
+    public Guid? StudentId { get; set; }                // 13/10/2026
+    public string StudentName { get; set; } = "";
+    public List<string> Subjects { get; set; } = new();
 }
 
 /// <summary>
@@ -136,6 +163,8 @@ public class AdminPaymentReadModel
     public DateTime TimeCr { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime? PlanTo { get; set; }
+    public string StudentName { get; set; } = "";       // 13/10/2026 - con được gia hạn ("" = đơn cũ, mọi con)
+    public List<string> Subjects { get; set; } = new();
 }
 
 /// <summary>12/10/2026 - Admin xác nhận tay đơn đã nhận tiền (webhook chưa cấu hình / khách ghi sai nội dung)</summary>
@@ -152,4 +181,5 @@ public class PaymentOrderRow
     public string FullName { get; set; } = "";
     public string? Email { get; set; }
     public string? Phone { get; set; }
+    public string StudentName { get; set; } = "";       // 13/10/2026
 }

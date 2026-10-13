@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using HocTap.Application.Commons;
 using HocTap.Domain.Aggregates.Auth;
+using HocTap.Domain.Aggregates.Payments;   // 13/10/2026
 using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Bases;
 using HocTap.Domain.Commons;
@@ -349,7 +350,12 @@ public class AuthServices : IAuthServices
         _Result.Status = status;
         _Result.TrialEnd = i_user.trialend;
         _Result.PlanEnd = i_user.planend;
-        _Result.CanStudy = AccountRules.CanStudy(status);
+        // 13/10/2026: quyền học theo con × môn — dùng thử (mọi con, mọi môn) + hạn từng con × môn
+        DateTime now = clock.UtcNow;
+        List<StudentPlanModel> lstPlan = unitOfWork.PaymentRepo.GetListStudentPlanByUser(i_user.id);
+        _Result.TrialActive = PlanRules.TrialActive(i_user, now);
+        _Result.CanStudy = PlanRules.CanStudyAny(i_user, lstPlan, now);
+        _Result.Plans = lstPlan.Select(p => PlanRules.ToReadModel(p, now)).ToList();
         return _Result;
     }
 

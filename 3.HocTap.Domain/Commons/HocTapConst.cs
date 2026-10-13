@@ -30,7 +30,9 @@ public static class HocTapConst
     public const int MAX_ITEMS = 60;                   // số câu tối đa 1 lượt gửi kèm
     public const int MAX_IMPORT = 5000;                // số lượt tối đa 1 lần nhập
     public const int MAX_QUESTION_JSON = 20000;        // độ dài tối đa nội dung 1 câu (ký tự)
-    public static readonly short[] GRADES = { 2, 6 };
+    // 13/10/2026: mở rộng lớp 2–9 (không có lớp 1) — khớp GRADE_LIST ở web/src/content/catalog.js và CHECK trong SQL phase7
+    public static readonly short[] GRADES = { 2, 3, 4, 5, 6, 7, 8, 9 };
+    public const string GRADE_INVALID = "Lớp không hợp lệ (chỉ có lớp 2 đến lớp 9).";
     public static readonly string[] SUBJECTS = { "toan", "anh" };
 
     // ===== Claim trong JWT =====
@@ -68,5 +70,10 @@ public static class HocTapConst
     public const string PAY_CODE_PREFIX = "HT";         // mã đơn = nội dung chuyển khoản: HT + 8 ký tự
     public const int PAY_CODE_LENGTH = 8;
     public const string PAY_GATEWAY_ADMIN = "ADMIN";    // admin xác nhận tay
-    public const string TERMS_VERSION = "2026-10-12";   // phiên bản điều khoản hiện hành (app_user.termsversion)
+    public const string TERMS_VERSION = "2026-10-13";   // phiên bản điều khoản hiện hành (app_user.termsversion) — 13/10/2026: gói con × môn
+
+    // ===== 13/10/2026 - Gói học theo hồ sơ con × môn (student_plan) =====
+    public const int GRADE_FIX_DAYS = 7;                // hồ sơ mới tạo: được sửa lớp tự do trong 7 ngày (nhập nhầm)
+    public const int GRADE_CHANGE_DAYS = 180;           // sau đó mỗi hồ sơ chỉ đổi lớp 1 lần / 180 ngày (chống dùng chung 1 hồ sơ học mọi lớp)
+    public static readonly Dictionary<string, string> SUBJECT_NAMES = new() { ["toan"] = "Toán", ["anh"] = "Tiếng Anh" };
 }

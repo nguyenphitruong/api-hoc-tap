@@ -43,8 +43,10 @@ public class UserReadModel
     public string Role { get; set; } = "";
     public string Status { get; set; } = "";
     public DateTime TrialEnd { get; set; }
-    public DateTime? PlanEnd { get; set; }
-    public bool CanStudy { get; set; }
+    public DateTime? PlanEnd { get; set; }              // 13/10/2026: hạn xa nhất trong các gói con × môn (hiển thị tổng quát)
+    public bool CanStudy { get; set; }                  // còn dùng thử hoặc có ít nhất 1 gói con × môn còn hạn
+    public bool TrialActive { get; set; }               // 13/10/2026 - đang dùng thử: mọi con, mọi môn
+    public List<Payments.StudentPlanReadModel> Plans { get; set; } = new();   // 13/10/2026 - hạn từng con × môn
 }
 
 /// <summary>08/10/2026 - Kết quả đăng nhập / làm mới token / vào phiên học sinh</summary>

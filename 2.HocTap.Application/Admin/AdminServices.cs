@@ -50,6 +50,7 @@ public class AdminServices : IAdminServices
 
     /// <summary>
     /// KICHHOAT: gói đến = (planend còn hạn ? planend : bây giờ) + Months tháng, trạng thái HOATDONG.
+    ///   Update 13/10/2026: cộng Months tháng cho MỌI hồ sơ con đang hoạt động × cả 2 môn (student_plan, PlanHelper.Extend).
     /// GIAHANTHU: trialend = (trialend còn hạn ? trialend : bây giờ) + Days ngày, trạng thái DUNGTHU (nếu đang không có gói còn hạn).
     /// Tài khoản đang khoá phải mở khoá trước.
     /// </summary>
@@ -72,12 +73,8 @@ public class AdminServices : IAdminServices
         if (i_model.Action == HocTapConst.PLAN_ACTIVATE)
         {
             if (i_model.Months < 1 || i_model.Months > HocTapConst.PLAN_MAX_MONTHS) throw new LogicException($"Số tháng từ 1 đến {HocTapConst.PLAN_MAX_MONTHS}.");
-            DateTime from = user.planend.HasValue && user.planend > now && user.status == HocTapConst.STATUS_ACTIVE ? user.planend.Value : now;
-            user.planend = from.AddMonths(i_model.Months);
-            user.status = HocTapConst.STATUS_ACTIVE;
-            log.action = HocTapConst.PLAN_ACTIVATE;
-            log.fromdate = from;
-            log.todate = user.planend;
+            if (unitOfWork.StudentRepo.GetListStudentByUser(user.id).Count == 0) throw new LogicException("Tài khoản chưa có hồ sơ con để kích hoạt gói.");
+            log.action = HocTapConst.PLAN_ACTIVATE;   // hạn mới tính khi lưu (sau InitTransaction)
         }
         else if (i_model.Action == HocTapConst.PLAN_TRIAL)
         {
@@ -99,6 +96,14 @@ public class AdminServices : IAdminServices
         try
         {
             unitOfWork.InitTransaction();
+            if (log.action == HocTapConst.PLAN_ACTIVATE)
+            {
+                // 13/10/2026: mọi con đang hoạt động × cả 2 môn
+                List<Guid> lstStudentId = unitOfWork.StudentRepo.GetListStudentByUser(user.id).Select(x => x.id).ToList();
+                (DateTime from, DateTime to) = PlanHelper.Extend(unitOfWork, user, lstStudentId, HocTapConst.SUBJECTS, i_model.Months, now);
+                log.fromdate = from;
+                log.todate = to;
+            }
             unitOfWork.UserRepo.UpdateUser(user);
             unitOfWork.AdminRepo.InsertPlanLog(log);
             unitOfWork.Save();

@@ -100,6 +100,7 @@ public static class HocTapEntityMapper
         _Result.active = i_source.active;
         _Result.timecr = i_source.timecr;
         _Result.timeup = i_source.timeup;
+        _Result.gradechangedat = i_source.gradechangedat;   // 13/10/2026
         return _Result;
     }
 
@@ -116,6 +117,7 @@ public static class HocTapEntityMapper
         _Result.active = i_source.active;
         _Result.timecr = i_source.timecr;
         _Result.timeup = i_source.timeup;
+        _Result.gradechangedat = i_source.gradechangedat;   // 13/10/2026
         return _Result;
     }
 
@@ -333,6 +335,8 @@ public static class HocTapEntityMapper
         _Result.timecr = i_source.timecr;
         _Result.paidat = i_source.paidat;
         _Result.timeup = i_source.timeup;
+        _Result.studentid = i_source.studentid;   // 13/10/2026
+        _Result.subjects = i_source.subjects;
         return _Result;
     }
 
@@ -355,6 +359,20 @@ public static class HocTapEntityMapper
         _Result.planto = i_source.planto;
         _Result.timecr = i_source.timecr;
         _Result.paidat = i_source.paidat;
+        _Result.timeup = i_source.timeup;
+        _Result.studentid = i_source.studentid;   // 13/10/2026
+        _Result.subjects = i_source.subjects;
+        return _Result;
+    }
+
+    /// <summary>13/10/2026 - student_plan -> StudentPlanModel</summary>
+    public static StudentPlanModel ToModel(student_plan i_source)
+    {
+        StudentPlanModel _Result = new StudentPlanModel();
+        _Result.studentid = i_source.studentid;
+        _Result.subject = i_source.subject;
+        _Result.planend = i_source.planend;
+        _Result.timecr = i_source.timecr;
         _Result.timeup = i_source.timeup;
         return _Result;
     }

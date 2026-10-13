@@ -61,8 +61,10 @@ public class PaymentRepository : IPaymentRepository
         if (!string.IsNullOrEmpty(i_status)) qOrder = qOrder.Where(x => x.status == i_status);
         var lstRow = (from o in qOrder
                       join u in dbContext.app_user.AsNoTracking() on o.userid equals u.id
+                      join st in dbContext.student_profile.AsNoTracking() on o.studentid equals st.id into stj   // 13/10/2026: tên con
+                      from st in stj.DefaultIfEmpty()
                       orderby o.timecr descending
-                      select new { order = o, u.fullname, u.email, u.phone })
+                      select new { order = o, u.fullname, u.email, u.phone, nick = st == null ? null : st.nickname })
                      .Take(i_max)
                      .ToList();
         List<PaymentOrderRow> lstResult = new List<PaymentOrderRow>();
@@ -73,8 +75,41 @@ public class PaymentRepository : IPaymentRepository
             item.FullName = row.fullname;
             item.Email = row.email;
             item.Phone = row.phone;
+            item.StudentName = row.nick ?? "";
             lstResult.Add(item);
         }
         return lstResult;
+    }
+
+    // ===== 13/10/2026 - Hạn học theo hồ sơ con × môn =====
+    public List<StudentPlanModel> GetListStudentPlanByUser(Guid i_userId)
+    {
+        var lstEntity = (from p in dbContext.student_plan.AsNoTracking()
+                         join st in dbContext.student_profile.AsNoTracking() on p.studentid equals st.id
+                         where st.userid == i_userId && st.active
+                         select p).ToList();
+        return lstEntity.Select(HocTapEntityMapper.ToModel).ToList();
+    }
+
+    public List<StudentPlanModel> GetListStudentPlan(Guid i_studentId)
+    {
+        return dbContext.student_plan.AsNoTracking().Where(x => x.studentid == i_studentId).ToList()
+            .Select(HocTapEntityMapper.ToModel).ToList();
+    }
+
+    /// <summary>Có dòng (đang theo dõi hoặc trong CSDL) thì cập nhật hạn, chưa có thì thêm mới</summary>
+    public void UpsertStudentPlan(StudentPlanModel i_plan)
+    {
+        student_plan? entity = dbContext.student_plan.Find(i_plan.studentid, i_plan.subject);
+        if (entity == null)
+        {
+            dbContext.student_plan.Add(new student_plan
+            {
+                studentid = i_plan.studentid, subject = i_plan.subject, planend = i_plan.planend, timecr = i_plan.timecr, timeup = i_plan.timeup,
+            });
+            return;
+        }
+        entity.planend = i_plan.planend;
+        entity.timeup = i_plan.timeup;
     }
 }

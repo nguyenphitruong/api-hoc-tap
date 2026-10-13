@@ -42,17 +42,15 @@ public class AttemptServices : IAttemptServices
         }
         StudentProfileModel student = ServiceGuard.GetOwnedStudent(unitOfWork, i_caller, i_caller.StudentId.Value);
 
-        // 2. Tài khoản còn hạn
+        // 2. Dựng lượt học
         AppUserModel? user = unitOfWork.UserRepo.GetUserById(i_caller.UserId);
         if (user == null) throw new LogicException("Không tìm thấy tài khoản.", 401);
-        string status = AccountRules.EffectiveStatus(user.status, user.trialend, user.planend, clock.UtcNow);
-        if (!AccountRules.CanStudy(status))
-        {
-            throw new LogicException("Tài khoản đã hết hạn sử dụng. Phụ huynh vui lòng gia hạn để tiếp tục lưu bài.", 403);
-        }
-
-        // 3. Dựng lượt học + kiểm tra bài được giao (nếu có)
         AttemptModel attempt = BuildAttempt(i_model, student, HocTapConst.SOURCE_APP, true);
+
+        // 13/10/2026: con còn hạn MÔN của lượt học (dùng thử hoặc student_plan) — thay cho kiểm tra hạn cả tài khoản
+        PlanHelper.EnsureCanStudy(unitOfWork, user, student.id, student.nickname, attempt.subject, clock.UtcNow);
+
+        // 3. Kiểm tra bài được giao (nếu có)
         AssignmentModel? assignment = null;
         AssignmentStudentModel? assignmentStudent = null;
         if (i_model.AssignmentId.HasValue)

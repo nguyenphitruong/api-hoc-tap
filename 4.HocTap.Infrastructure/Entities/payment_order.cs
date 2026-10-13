@@ -19,4 +19,6 @@ public class payment_order
     public DateTime timecr { get; set; }
     public DateTime? paidat { get; set; }
     public DateTime? timeup { get; set; }
+    public Guid? studentid { get; set; }        // 13/10/2026 - phase8: con được gia hạn
+    public string? subjects { get; set; }       // 13/10/2026 - phase8: "toan" | "anh" | "anh,toan"
 }

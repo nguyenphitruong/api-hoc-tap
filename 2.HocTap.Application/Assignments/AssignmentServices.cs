@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using HocTap.Application.Commons;
 using HocTap.Domain.Aggregates.Assignments;
+using HocTap.Domain.Aggregates.Auth;   // 13/10/2026
 using HocTap.Domain.Aggregates.Attempts;
 using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Bases;
@@ -53,7 +54,7 @@ public class AssignmentServices : IAssignmentServices
         ServiceGuard.EnsureParent(i_caller);
         DateTime now = clock.UtcNow;
         string subject = i_model.Subject ?? "";
-        if (!HocTapConst.GRADES.Contains(i_model.Grade)) throw new LogicException("Lớp chỉ được chọn 2 hoặc 6.");
+        if (!HocTapConst.GRADES.Contains(i_model.Grade)) throw new LogicException(HocTapConst.GRADE_INVALID);   // 13/10/2026
         if (!HocTapConst.SUBJECTS.Contains(subject)) throw new LogicException("Môn không hợp lệ.");
 
         List<string> lstTopic = (i_model.TopicIds ?? new List<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
@@ -77,6 +78,7 @@ public class AssignmentServices : IAssignmentServices
 
         List<Guid> lstStudentId = (i_model.StudentIds ?? new List<Guid>()).Distinct().ToList();
         if (lstStudentId.Count == 0) throw new LogicException("Chọn ít nhất 1 con để giao bài.");
+        AppUserModel parent = unitOfWork.UserRepo.GetUserById(i_caller.UserId) ?? throw new LogicException("Không tìm thấy tài khoản.", 401);   // 13/10/2026
         foreach (Guid studentId in lstStudentId)
         {
             StudentProfileModel student = ServiceGuard.GetOwnedStudent(unitOfWork, i_caller, studentId);
@@ -84,6 +86,7 @@ public class AssignmentServices : IAssignmentServices
             {
                 throw new LogicException($"{student.nickname} học lớp {student.grade}, không giao được bài lớp {i_model.Grade}.");
             }
+            PlanHelper.EnsureCanStudy(unitOfWork, parent, student.id, student.nickname, subject, now);   // 13/10/2026: con phải còn hạn môn
         }
 
         // 2. Tạo bài

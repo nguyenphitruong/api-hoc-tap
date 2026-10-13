@@ -4,6 +4,7 @@ using HocTap.Application.Commons;
 using HocTap.Domain.Aggregates.Admin;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Payments;
+using HocTap.Domain.Aggregates.Students;   // 13/10/2026
 using HocTap.Domain.Bases;
 using HocTap.Domain.Commons;
 
@@ -13,7 +14,7 @@ namespace HocTap.Application.Payments;
 /// 12/10/2026 - Cấu hình thanh toán (appsettings "Payment"):
 ///   BankBin (mã BIN ngân hàng theo VietQR, vd 970436 = Vietcombank), BankName, AccountNo, AccountName,
 ///   WebhookApiKey (khoá SePay gửi kèm header "Authorization: Apikey ..."; trống = tắt tự xác nhận),
-///   Plans: [{ Code, Name, Months, Price, Note }]
+///   Plans: [{ Code, Name, Months, Subjects, Price, Note }] — 13/10/2026: giá theo SỐ MÔN (1 | 2), không phân biệt lớp
 /// </summary>
 public class PaymentOptions
 {
@@ -46,6 +47,8 @@ public interface IPaymentServices
 ///      -> cộng hạn gói (nối tiếp nếu còn hạn), trạng thái HOATDONG, đơn DATT, ghi plan_log THANHTOAN — 1 lần Save.
 ///   4. Admin xác nhận tay (ConfirmOrderByAdmin) khi chưa cấu hình webhook hoặc khách ghi sai nội dung.
 /// Tài khoản đang khoá: vẫn ghi nhận tiền + cộng hạn nhưng giữ trạng thái KHOA (admin mở khoá sau).
+/// Update 13/10/2026: mỗi đơn gia hạn cho 1 hồ sơ con × môn đã chọn (student_plan, PlanHelper.Extend);
+///   đơn cũ không có studentid (tạo trước phase8) -> cộng cho mọi con đang hoạt động, cả 2 môn.
 /// </summary>
 public class PaymentServices : IPaymentServices
 {
@@ -85,10 +88,17 @@ public class PaymentServices : IPaymentServices
         AppUserModel user = unitOfWork.UserRepo.GetUserById(i_caller.UserId) ?? throw new LogicException("Không tìm thấy tài khoản.", 404);
         if (user.status == HocTapConst.STATUS_LOCKED) throw new LogicException("Tài khoản đang bị khoá, vui lòng liên hệ quản trị.", 403);
 
-        // 2. Đơn chờ thanh toán cùng gói còn hạn -> dùng lại mã QR
+        // 13/10/2026: con + môn được gia hạn (số môn phải đúng số môn của gói)
+        if (!i_model.StudentId.HasValue) throw new LogicException("Chọn hồ sơ con cần gia hạn.");
+        StudentProfileModel student = ServiceGuard.GetOwnedStudent(unitOfWork, i_caller, i_model.StudentId.Value);
+        List<string> lstSubject = PlanRules.NormalizeSubjects(i_model.Subjects);
+        if (lstSubject.Count != plan.Subjects) throw new LogicException($"Gói này dành cho {plan.Subjects} môn, hãy chọn đúng {plan.Subjects} môn.");
+        string subjects = PlanRules.JoinSubjects(lstSubject);
+
+        // 2. Đơn chờ thanh toán cùng gói, cùng con, cùng môn còn hạn -> dùng lại mã QR
         DateTime now = clock.UtcNow;
         PaymentOrderModel? pending = unitOfWork.PaymentRepo.GetLastPendingOrder(user.id, plan.Code);
-        if (pending != null && pending.amount == plan.Price
+        if (pending != null && pending.amount == plan.Price && pending.studentid == student.id && pending.subjects == subjects
             && PaymentRules.EffectiveOrderStatus(pending.status, pending.timecr, now) == HocTapConst.PAY_PENDING)
         {
             return ToReadModel(pending, now);
@@ -104,6 +114,8 @@ public class PaymentServices : IPaymentServices
         order.amount = plan.Price;
         order.status = HocTapConst.PAY_PENDING;
         order.timecr = now;
+        order.studentid = student.id;   // 13/10/2026
+        order.subjects = subjects;
         try
         {
             unitOfWork.InitTransaction();
@@ -228,7 +240,8 @@ public class PaymentServices : IPaymentServices
         ApplyPaid(order, paid, HocTapConst.PAY_GATEWAY_ADMIN, "ADMIN-" + order.code, null, i_caller.UserId, note);
 
         AppUserModel? user = unitOfWork.UserRepo.GetUserById(order.userid);
-        return ToAdminReadModel(new PaymentOrderRow { Order = order, FullName = user?.fullname ?? "", Email = user?.email, Phone = user?.phone }, clock.UtcNow);
+        string studentName = order.studentid.HasValue ? unitOfWork.StudentRepo.GetStudentById(order.studentid.Value)?.nickname ?? "" : "";   // 13/10/2026
+        return ToAdminReadModel(new PaymentOrderRow { Order = order, FullName = user?.fullname ?? "", Email = user?.email, Phone = user?.phone, StudentName = studentName }, clock.UtcNow);
     }
 
     // ===================== Hàm phụ =====================
@@ -238,20 +251,30 @@ public class PaymentServices : IPaymentServices
     {
         AppUserModel user = unitOfWork.UserRepo.GetUserById(i_order.userid) ?? throw new LogicException("Không tìm thấy tài khoản của đơn.", 404);
         DateTime now = clock.UtcNow;
-        DateTime from = PaymentRules.PlanFrom(user.status, user.planend, now);
-        DateTime to = from.AddMonths(i_order.months);
 
-        user.planend = to;
-        if (user.status != HocTapConst.STATUS_LOCKED) user.status = HocTapConst.STATUS_ACTIVE;
-        user.timeup = now;
+        // 13/10/2026: con × môn được cộng hạn (đơn cũ không ghi con -> mọi con đang hoạt động, cả 2 môn)
+        List<Guid> lstStudentId;
+        List<string> lstSubject;
+        string target;
+        if (i_order.studentid.HasValue)
+        {
+            StudentProfileModel? student = unitOfWork.StudentRepo.GetStudentById(i_order.studentid.Value);
+            lstStudentId = new List<Guid> { i_order.studentid.Value };
+            lstSubject = PlanRules.SplitSubjects(i_order.subjects);
+            target = $"{student?.nickname ?? "con"} – {PlanRules.SubjectNames(lstSubject)}";
+        }
+        else
+        {
+            lstStudentId = unitOfWork.StudentRepo.GetListStudentByUser(user.id).Select(x => x.id).ToList();
+            lstSubject = HocTapConst.SUBJECTS.ToList();
+            target = "mọi con – cả 2 môn (đơn cũ)";
+        }
 
         i_order.status = HocTapConst.PAY_PAID;
         i_order.paidamount = i_paidAmount;
         i_order.gateway = i_gateway;
         i_order.txnref = i_txnRef.Length > 100 ? i_txnRef[..100] : i_txnRef;
         i_order.txncontent = i_content != null && i_content.Length > 300 ? i_content[..300] : i_content;
-        i_order.planfrom = from;
-        i_order.planto = to;
         i_order.paidat = now;
         i_order.timeup = now;
 
@@ -260,15 +283,19 @@ public class PaymentServices : IPaymentServices
         log.userid = user.id;
         log.adminid = i_adminId ?? user.id;
         log.action = HocTapConst.PLAN_PAYMENT;
-        log.fromdate = from;
-        log.todate = to;
-        log.note = $"Đơn {i_order.code} - {i_order.months} tháng. {i_note}";
+        log.note = $"Đơn {i_order.code} - {i_order.months} tháng ({target}). {i_note}";
         if (log.note.Length > 300) log.note = log.note[..300];
         log.timecr = now;
 
         try
         {
             unitOfWork.InitTransaction();
+            // Cộng hạn sau InitTransaction (InitTransaction xoá thay đổi chưa lưu); PlanHelper không Save
+            (DateTime from, DateTime to) = PlanHelper.Extend(unitOfWork, user, lstStudentId, lstSubject, i_order.months, now);
+            i_order.planfrom = from;
+            i_order.planto = to;
+            log.fromdate = from;
+            log.todate = to;
             unitOfWork.UserRepo.UpdateUser(user);
             unitOfWork.PaymentRepo.UpdateOrder(i_order);
             unitOfWork.AdminRepo.InsertPlanLog(log);
@@ -321,6 +348,9 @@ public class PaymentServices : IPaymentServices
         read.ExpiresAt = i_order.timecr.AddHours(HocTapConst.PAY_ORDER_HOURS);
         read.PaidAt = i_order.paidat;
         read.PlanTo = i_order.planto;
+        read.StudentId = i_order.studentid;   // 13/10/2026
+        read.StudentName = i_order.studentid.HasValue ? unitOfWork.StudentRepo.GetStudentById(i_order.studentid.Value)?.nickname ?? "" : "";
+        read.Subjects = PlanRules.SplitSubjects(i_order.subjects);
         return read;
     }
 
@@ -345,6 +375,8 @@ public class PaymentServices : IPaymentServices
         read.TimeCr = o.timecr;
         read.PaidAt = o.paidat;
         read.PlanTo = o.planto;
+        read.StudentName = i_row.StudentName;   // 13/10/2026
+        read.Subjects = PlanRules.SplitSubjects(o.subjects);
         return read;
     }
 

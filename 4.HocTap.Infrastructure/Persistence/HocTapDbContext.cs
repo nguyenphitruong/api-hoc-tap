@@ -20,6 +20,7 @@ public class HocTapDbContext : DbContext
     public DbSet<assignment_student> assignment_student => Set<assignment_student>();
     public DbSet<plan_log> plan_log => Set<plan_log>();                             // 08/10/2026 - giai đoạn 5
     public DbSet<payment_order> payment_order => Set<payment_order>();              // 12/10/2026 - gia hạn chuyển khoản QR
+    public DbSet<student_plan> student_plan => Set<student_plan>();                 // 13/10/2026 - hạn học con × môn
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -59,5 +60,6 @@ public class HocTapDbContext : DbContext
             e.Property(x => x.amount).HasColumnType("numeric(12,0)");
             e.Property(x => x.paidamount).HasColumnType("numeric(12,0)");
         });
+        b.Entity<student_plan>().ToTable("student_plan").HasKey(x => new { x.studentid, x.subject });   // 13/10/2026
     }
 }

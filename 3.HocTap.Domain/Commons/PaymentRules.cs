@@ -6,7 +6,7 @@ namespace HocTap.Domain.Commons;
 /// 12/10/2026 - Quy tắc thanh toán gia hạn (hàm thuần, có xUnit):
 /// - Mã đơn: HT + 8 ký tự (chữ hoa + số, bỏ ký tự dễ nhầm O/0/I/1) — chính là nội dung chuyển khoản.
 /// - Tìm mã đơn trong nội dung giao dịch ngân hàng: ngân hàng có thể thêm tiền tố / số tham chiếu, bỏ dấu cách, viết thường.
-/// - Hạn gói mới: gói đang còn hạn thì cộng nối tiếp từ planend, ngược lại tính từ bây giờ (giống admin kích hoạt).
+/// - (13/10/2026: cách cộng hạn chuyển sang PlanRules.ExtendFrom — tính riêng từng con × môn)
 /// - Trạng thái hiệu lực đơn: chờ thanh toán quá PAY_ORDER_HOURS giờ -> HETHAN (vẫn nhận nếu sau đó tiền về đúng mã).
 /// - Ảnh QR: VietQR Quick Link (img.vietqr.io) — app ngân hàng quét được, điền sẵn số tiền + nội dung.
 /// </summary>
@@ -38,12 +38,6 @@ public static class PaymentRules
             }
         }
         return result;
-    }
-
-    /// <summary>Gói còn hạn (HOATDONG, planend > now) -> cộng từ planend; còn lại cộng từ bây giờ</summary>
-    public static DateTime PlanFrom(string i_status, DateTime? i_planEnd, DateTime i_nowUtc)
-    {
-        return i_status == HocTapConst.STATUS_ACTIVE && i_planEnd.HasValue && i_planEnd.Value > i_nowUtc ? i_planEnd.Value : i_nowUtc;
     }
 
     public static string EffectiveOrderStatus(string i_status, DateTime i_timeCr, DateTime i_nowUtc)
