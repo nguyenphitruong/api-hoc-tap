@@ -45,7 +45,7 @@ public class StudentPlanReadModel
     public bool Active { get; set; }
 }
 
-/// <summary>12/10/2026 - 1 gói gia hạn (cấu hình Payment:Plans trong appsettings)</summary>
+/// <summary>12/10/2026 - 1 gói gia hạn. Update 14/10/2026: đọc từ bảng plan_price (appsettings Payment:Plans chỉ còn là dự phòng)</summary>
 public class PlanPackageReadModel
 {
     public string Code { get; set; } = "";
@@ -65,6 +65,7 @@ public class PaymentConfigReadModel
     public string AccountNo { get; set; } = "";
     public string AccountName { get; set; } = "";
     public List<PlanPackageReadModel> Plans { get; set; } = new();
+    public HocTap.Domain.Aggregates.Settings.SupportContactReadModel Support { get; set; } = new();   // 14/10/2026 - liên hệ hỗ trợ (sys_setting)
 }
 
 /// <summary>12/10/2026 - Phụ huynh tạo đơn gia hạn</summary>

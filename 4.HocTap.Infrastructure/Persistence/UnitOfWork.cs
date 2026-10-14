@@ -4,6 +4,7 @@ using HocTap.Domain.Aggregates.Attempts;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
+using HocTap.Domain.Aggregates.Settings;   // 14/10/2026
 using HocTap.Domain.Bases;
 using HocTap.Infrastructure.Repositories;
 
@@ -133,5 +134,19 @@ public class UnitOfWork : IUnitOfWork
     {
         _context.ChangeTracker.Clear();
         _inTransaction = false;
+    }
+
+    // 14/10/2026 - bảng giá (plan_price) + tham số hệ thống (sys_setting)
+    private ISettingRepository? settingRepo;
+    public ISettingRepository SettingRepo
+    {
+        get
+        {
+            if (this.settingRepo == null)
+            {
+                this.settingRepo = new SettingRepository(_context);
+            }
+            return settingRepo;
+        }
     }
 }

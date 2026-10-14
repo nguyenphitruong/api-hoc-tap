@@ -5,6 +5,7 @@ using HocTap.Domain.Aggregates.Admin;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Payments;
 using HocTap.Domain.Aggregates.Students;   // 13/10/2026
+using HocTap.Domain.Aggregates.Settings;   // 14/10/2026
 using HocTap.Domain.Bases;
 using HocTap.Domain.Commons;
 
@@ -57,15 +58,20 @@ public class PaymentServices : IPaymentServices
     private readonly IUnitOfWork unitOfWork;
     private readonly IClock clock;
     private readonly PaymentOptions options;
+    private readonly SettingCache? settingCache;   // 14/10/2026 - bảng giá + liên hệ đọc từ CSDL (null = đọc thẳng, dùng trong kiểm thử)
 
-    public PaymentServices(IUnitOfWork i_UnitOfWork, IClock i_Clock, PaymentOptions i_Options)
+    public PaymentServices(IUnitOfWork i_UnitOfWork, IClock i_Clock, PaymentOptions i_Options, SettingCache? i_SettingCache = null)
     {
         unitOfWork = i_UnitOfWork;
         clock = i_Clock;
         options = i_Options;
+        settingCache = i_SettingCache;
     }
 
-    /// <summary>Bảng giá + tài khoản nhận tiền (công khai)</summary>
+    /// <summary>
+    /// Bảng giá + tài khoản nhận tiền (công khai)
+    /// Update 14/10/2026: bảng giá lấy từ plan_price (gói đang bán), kèm liên hệ hỗ trợ từ sys_setting (SettingCache 5 phút)
+    /// </summary>
     public PaymentConfigReadModel GetConfig()
     {
         PaymentConfigReadModel _Result = new PaymentConfigReadModel();
@@ -74,7 +80,10 @@ public class PaymentServices : IPaymentServices
         _Result.BankName = options.BankName;
         _Result.AccountNo = options.AccountNo;
         _Result.AccountName = options.AccountName;
-        _Result.Plans = options.Plans.Where(x => x.Months > 0 && x.Price > 0).ToList();
+        //Update 14/10/2026: plan_price thay appsettings Payment:Plans (trống / lỗi CSDL -> dùng tạm appsettings)
+        SettingSnapshot settings = Settings();
+        _Result.Plans = settings.ActivePlans();
+        _Result.Support = settings.Support();
         return _Result;
     }
 
@@ -313,7 +322,8 @@ public class PaymentServices : IPaymentServices
 
     private PlanPackageReadModel FindPlan(string? i_code)
     {
-        PlanPackageReadModel? plan = options.Plans.FirstOrDefault(x => string.Equals(x.Code, (i_code ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
+        //Update 14/10/2026: chỉ gói đang bán trong plan_price
+        PlanPackageReadModel? plan = Settings().ActivePlans().FirstOrDefault(x => string.Equals(x.Code, (i_code ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
         if (plan == null || plan.Months < 1 || plan.Price <= 0) throw new LogicException("Gói gia hạn không hợp lệ.");
         return plan;
     }
@@ -330,12 +340,13 @@ public class PaymentServices : IPaymentServices
 
     private PaymentOrderReadModel ToReadModel(PaymentOrderModel i_order, DateTime i_now)
     {
-        PlanPackageReadModel? plan = options.Plans.FirstOrDefault(x => x.Code == i_order.plancode);
+        //Update 14/10/2026: tra tên gói trong plan_price (kể cả gói đã ngưng bán) — số tiền đơn giữ nguyên lúc tạo
+        PlanPriceModel? plan = Settings().Plans.FirstOrDefault(x => string.Equals(x.code, i_order.plancode, StringComparison.OrdinalIgnoreCase));
         PaymentOrderReadModel read = new PaymentOrderReadModel();
         read.Id = i_order.id;
         read.Code = i_order.code;
         read.PlanCode = i_order.plancode;
-        read.PlanName = plan?.Name ?? $"{i_order.months} tháng";
+        read.PlanName = plan?.name ?? $"{i_order.months} tháng";
         read.Months = i_order.months;
         read.Amount = i_order.amount;
         read.Status = PaymentRules.EffectiveOrderStatus(i_order.status, i_order.timecr, i_now);
@@ -391,4 +402,7 @@ public class PaymentServices : IPaymentServices
 
     private static bool FixedEquals(string a, string b) =>
         CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(a), Encoding.UTF8.GetBytes(b));
+
+    /// <summary>14/10/2026 - Cài đặt hiện hành (bảng giá + tham số) qua bộ nhớ đệm SettingCache</summary>
+    private SettingSnapshot Settings() => SettingReader.Get(unitOfWork, options, settingCache, clock.UtcNow);
 }

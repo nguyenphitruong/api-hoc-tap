@@ -4,6 +4,7 @@ using HocTap.Domain.Aggregates.Attempts;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
+using HocTap.Domain.Aggregates.Settings;   // 14/10/2026
 using HocTap.Infrastructure.Entities;
 
 namespace HocTap.Infrastructure.MappingRepos;
@@ -374,6 +375,36 @@ public static class HocTapEntityMapper
         _Result.planend = i_source.planend;
         _Result.timecr = i_source.timecr;
         _Result.timeup = i_source.timeup;
+        return _Result;
+    }
+
+    /// <summary>14/10/2026 - plan_price -> PlanPriceModel</summary>
+    public static PlanPriceModel ToModel(plan_price i_source)
+    {
+        PlanPriceModel _Result = new PlanPriceModel();
+        _Result.code = i_source.code;
+        _Result.name = i_source.name;
+        _Result.months = i_source.months;
+        _Result.subjects = i_source.subjects;
+        _Result.price = i_source.price;
+        _Result.note = i_source.note;
+        _Result.sortorder = i_source.sortorder;
+        _Result.isactive = i_source.isactive;
+        _Result.timecr = i_source.timecr;
+        _Result.timeup = i_source.timeup;
+        _Result.userup = i_source.userup;
+        return _Result;
+    }
+
+    /// <summary>14/10/2026 - sys_setting -> SysSettingModel</summary>
+    public static SysSettingModel ToModel(sys_setting i_source)
+    {
+        SysSettingModel _Result = new SysSettingModel();
+        _Result.key = i_source.key;
+        _Result.value = i_source.value;
+        _Result.note = i_source.note;
+        _Result.timeup = i_source.timeup;
+        _Result.userup = i_source.userup;
         return _Result;
     }
 }
