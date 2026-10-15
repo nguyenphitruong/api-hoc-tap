@@ -10,7 +10,8 @@ namespace HocTap.Domain.Commons;
 /// </summary>
 public static class AttemptRules
 {
-    private static readonly Regex TOPIC_RE = new(@"^(?:(ch|hk|as):)?g(2|6)\.(toan|anh)\.([a-z0-9_\-]{1,60})$", RegexOptions.Compiled);
+    //Update 15/10/2026: g(2|6) -> g(\d) + kiểm tra HocTapConst.GRADES (lớp 2–9). Trước đây lớp 3,4,5,7,8,9 bị từ chối khi lưu lượt học / giao bài.
+    private static readonly Regex TOPIC_RE = new(@"^(?:(ch|hk|as):)?g(\d)\.(toan|anh)\.([a-z0-9_\-]{1,60})$", RegexOptions.Compiled);
 
     /// <summary>Tách mã chủ đề; null nếu sai định dạng</summary>
     public static (short Grade, string Subject, string Kind)? ParseTopic(string? topicId)
@@ -18,7 +19,9 @@ public static class AttemptRules
         if (string.IsNullOrEmpty(topicId) || topicId.Length > 80) return null;
         var m = TOPIC_RE.Match(topicId);
         if (!m.Success) return null;
-        return ((short)(m.Groups[2].Value == "2" ? 2 : 6), m.Groups[3].Value, m.Groups[1].Success ? m.Groups[1].Value : "topic");
+        short grade = short.Parse(m.Groups[2].Value);
+        if (!HocTapConst.GRADES.Contains(grade)) return null;   //Update 15/10/2026: chỉ lớp có trong hệ thống (2–9)
+        return (grade, m.Groups[3].Value, m.Groups[1].Success ? m.Groups[1].Value : "topic");
     }
 
     public static DateTime FromUnixMs(long ms) => DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
