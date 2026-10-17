@@ -5,6 +5,7 @@ using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
 using HocTap.Domain.Aggregates.Settings;   // 14/10/2026
+using HocTap.Domain.Aggregates.Guests;     // 17/10/2026
 
 namespace HocTap.Domain.Bases;
 
@@ -23,6 +24,7 @@ public interface IUnitOfWork
     IAdminRepository AdminRepo { get; }
     IPaymentRepository PaymentRepo { get; }   // 12/10/2026 - đơn gia hạn chuyển khoản QR
     ISettingRepository SettingRepo { get; }   // 14/10/2026 - bảng giá (plan_price) + tham số hệ thống (sys_setting)
+    IGuestRepository GuestRepo { get; }       // 17/10/2026 - hoạt động khách học thử (guest_activity)
 
     void InitTransaction();
     void Save();

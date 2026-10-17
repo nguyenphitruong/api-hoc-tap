@@ -10,6 +10,7 @@ public class RegisterModel
     public string? Device { get; set; }
     public bool AcceptTerms { get; set; }          // 12/10/2026 - bắt buộc đồng ý điều khoản sử dụng
     public string? TermsVersion { get; set; }      // 12/10/2026 - phiên bản điều khoản client đã hiển thị
+    public string? GuestId { get; set; }           // 17/10/2026 - mã khách học thử của trình duyệt (gắn hoạt động học thử vào tài khoản)
 }
 
 /// <summary>08/10/2026 - Đăng nhập: Login là email hoặc số điện thoại</summary>
@@ -18,6 +19,7 @@ public class LoginModel
     public string? Login { get; set; }
     public string? Password { get; set; }
     public string? Device { get; set; }
+    public string? GuestId { get; set; }           // 17/10/2026 - mã khách học thử của trình duyệt
 }
 
 public class RefreshModel

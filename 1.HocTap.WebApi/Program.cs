@@ -19,6 +19,7 @@ namespace HocTap.WebApi;
 public class Program
 {
     public const string RATE_AUTH = "auth";
+    public const string RATE_GUEST = "guest";   // 17/10/2026 - ghi hoạt động khách học thử
 
     public static void Main(string[] args)
     {
@@ -70,6 +71,10 @@ public class Program
             o.AddPolicy(RATE_AUTH, ctx => RateLimitPartition.GetFixedWindowLimiter(
                 ctx.Connection.RemoteIpAddress?.ToString() ?? "x",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = cfg.GetValue("RateLimit:AuthPerMinute", 20), Window = TimeSpan.FromMinutes(1) }));
+            // 17/10/2026 - hoạt động khách học thử (không cần đăng nhập): 60 lần / phút / IP
+            o.AddPolicy(RATE_GUEST, ctx => RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Connection.RemoteIpAddress?.ToString() ?? "x",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = cfg.GetValue("RateLimit:GuestPerMinute", 60), Window = TimeSpan.FromMinutes(1) }));
             o.OnRejected = async (ctx, ct) =>
                 await ctx.HttpContext.Response.WriteAsJsonAsync(ApiResult.Fail(429, "Thao tác quá nhiều lần, vui lòng thử lại sau 1 phút."), ct);
         });

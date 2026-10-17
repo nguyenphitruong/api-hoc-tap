@@ -5,6 +5,7 @@ using HocTap.Domain.Aggregates.Payments;   // 13/10/2026
 using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Bases;
 using HocTap.Domain.Commons;
+using HocTap.Application.Guests;   // 17/10/2026
 
 namespace HocTap.Application.Auth;
 
@@ -27,13 +28,15 @@ public class AuthServices : IAuthServices
     private readonly ITokenService tokenService;
     private readonly IPasswordHasher passwordHasher;
     private readonly IClock clock;
+    private readonly IGuestServices? guestServices;   // 17/10/2026 - gắn hoạt động học thử vào tài khoản
 
-    public AuthServices(IUnitOfWork i_UnitOfWork, ITokenService i_TokenService, IPasswordHasher i_PasswordHasher, IClock i_Clock)
+    public AuthServices(IUnitOfWork i_UnitOfWork, ITokenService i_TokenService, IPasswordHasher i_PasswordHasher, IClock i_Clock, IGuestServices? i_GuestServices = null)
     {
         unitOfWork = i_UnitOfWork;
         tokenService = i_TokenService;
         passwordHasher = i_PasswordHasher;
         clock = i_Clock;
+        guestServices = i_GuestServices;
     }
 
     /// <summary>Đăng ký phụ huynh: kiểm tra họ tên, email / SĐT (ít nhất 1, chưa dùng), mật khẩu ≥ 6 ký tự</summary>
@@ -86,6 +89,7 @@ public class AuthServices : IAuthServices
             unitOfWork.RollbackTransaction();
             throw;
         }
+        LinkGuestSafe(i_model.GuestId, user.id, GuestRules.VIA_REGISTER);   //Create 17/10/2026: gắn hoạt động học thử của trình duyệt này
         return _Result;
     }
 
@@ -124,6 +128,7 @@ public class AuthServices : IAuthServices
             unitOfWork.RollbackTransaction();
             throw;
         }
+        LinkGuestSafe(i_model.GuestId, user.id, GuestRules.VIA_LOGIN);   //Create 17/10/2026: gắn hoạt động học thử của trình duyệt này
         return _Result;
     }
 
@@ -363,5 +368,23 @@ public class AuthServices : IAuthServices
     {
         if (i_value == null) return null;
         return i_value.Length > i_max ? i_value.Substring(0, i_max) : i_value;
+    }
+
+    /// <summary>
+    /// 17/10/2026 - Gắn hoạt động học thử (guest_activity) của mã khách vào tài khoản vừa đăng ký / đăng nhập.
+    /// Chạy SAU khi đã lưu tài khoản / token; mọi lỗi ở đây bị bỏ qua (thống kê không được làm hỏng đăng ký / đăng nhập).
+    /// Không có mã khách hoặc chưa cấu hình GuestServices (kiểm thử cũ) -> không làm gì.
+    /// </summary>
+    private void LinkGuestSafe(string? i_guestId, Guid i_userId, string i_via)
+    {
+        if (guestServices == null || string.IsNullOrWhiteSpace(i_guestId)) return;
+        try
+        {
+            guestServices.LinkGuest(i_guestId, i_userId, i_via);
+        }
+        catch (Exception)
+        {
+            // bỏ qua: ví dụ chưa chạy script phase10 (chưa có bảng guest_activity)
+        }
     }
 }

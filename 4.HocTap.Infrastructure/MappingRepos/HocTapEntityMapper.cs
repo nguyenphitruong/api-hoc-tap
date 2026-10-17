@@ -5,6 +5,7 @@ using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
 using HocTap.Domain.Aggregates.Settings;   // 14/10/2026
+using HocTap.Domain.Aggregates.Guests;     // 17/10/2026
 using HocTap.Infrastructure.Entities;
 
 namespace HocTap.Infrastructure.MappingRepos;
@@ -405,6 +406,50 @@ public static class HocTapEntityMapper
         _Result.note = i_source.note;
         _Result.timeup = i_source.timeup;
         _Result.userup = i_source.userup;
+        return _Result;
+    }
+
+    /// <summary>17/10/2026 - guest_activity -> GuestActivityModel</summary>
+    public static GuestActivityModel ToModel(guest_activity i_source)
+    {
+        GuestActivityModel _Result = new GuestActivityModel();
+        _Result.id = i_source.id;
+        _Result.guestid = i_source.guestid;
+        _Result.kind = i_source.kind;
+        _Result.grade = i_source.grade;
+        _Result.subject = i_source.subject;
+        _Result.topicid = i_source.topicid;
+        _Result.total = i_source.total;
+        _Result.correct = i_source.correct;
+        _Result.score10 = i_source.score10;
+        _Result.durationsec = i_source.durationsec;
+        _Result.note = i_source.note;
+        _Result.timecr = i_source.timecr;
+        _Result.userid = i_source.userid;
+        _Result.linkvia = i_source.linkvia;
+        _Result.linkedat = i_source.linkedat;
+        return _Result;
+    }
+
+    /// <summary>17/10/2026 - GuestActivityModel -> guest_activity (thêm mới)</summary>
+    public static guest_activity ToEntity(GuestActivityModel i_source)
+    {
+        guest_activity _Result = new guest_activity();
+        _Result.id = i_source.id;
+        _Result.guestid = i_source.guestid;
+        _Result.kind = i_source.kind;
+        _Result.grade = i_source.grade;
+        _Result.subject = i_source.subject;
+        _Result.topicid = i_source.topicid;
+        _Result.total = i_source.total;
+        _Result.correct = i_source.correct;
+        _Result.score10 = i_source.score10;
+        _Result.durationsec = i_source.durationsec;
+        _Result.note = i_source.note;
+        _Result.timecr = i_source.timecr;
+        _Result.userid = i_source.userid;
+        _Result.linkvia = i_source.linkvia;
+        _Result.linkedat = i_source.linkedat;
         return _Result;
     }
 }
