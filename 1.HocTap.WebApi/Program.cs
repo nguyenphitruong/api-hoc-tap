@@ -20,6 +20,7 @@ public class Program
 {
     public const string RATE_AUTH = "auth";
     public const string RATE_GUEST = "guest";   // 17/10/2026 - ghi hoạt động khách học thử
+    public const string RATE_FEEDBACK = "feedback";   // 18/10/2026 - gửi góp ý
 
     public static void Main(string[] args)
     {
@@ -75,6 +76,10 @@ public class Program
             o.AddPolicy(RATE_GUEST, ctx => RateLimitPartition.GetFixedWindowLimiter(
                 ctx.Connection.RemoteIpAddress?.ToString() ?? "x",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = cfg.GetValue("RateLimit:GuestPerMinute", 60), Window = TimeSpan.FromMinutes(1) }));
+            // 18/10/2026 - gửi góp ý: 5 lần / 10 phút / IP
+            o.AddPolicy(RATE_FEEDBACK, ctx => RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Connection.RemoteIpAddress?.ToString() ?? "x",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = cfg.GetValue("RateLimit:FeedbackPer10Min", 5), Window = TimeSpan.FromMinutes(10) }));
             o.OnRejected = async (ctx, ct) =>
                 await ctx.HttpContext.Response.WriteAsJsonAsync(ApiResult.Fail(429, "Thao tác quá nhiều lần, vui lòng thử lại sau 1 phút."), ct);
         });

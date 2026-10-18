@@ -24,6 +24,7 @@ public class HocTapDbContext : DbContext
     public DbSet<plan_price> plan_price => Set<plan_price>();                       // 14/10/2026 - bảng giá gói
     public DbSet<sys_setting> sys_setting => Set<sys_setting>();                    // 14/10/2026 - tham số hệ thống
     public DbSet<guest_activity> guest_activity => Set<guest_activity>();           // 17/10/2026 - hoạt động khách học thử
+    public DbSet<feedback> feedback => Set<feedback>();                             // 18/10/2026 - góp ý / báo lỗi câu hỏi
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -76,6 +77,12 @@ public class HocTapDbContext : DbContext
         {
             e.ToTable("guest_activity").HasKey(x => x.id);
             e.Property(x => x.score10).HasColumnType("numeric(4,1)");
+        });
+        // 18/10/2026 - Góp ý / báo lỗi câu hỏi (script sql-dump/20261018_hoctap_phase11.sql)
+        b.Entity<feedback>(e =>
+        {
+            e.ToTable("feedback").HasKey(x => x.id);
+            e.Property(x => x.question).HasColumnType("jsonb");
         });
     }
 }

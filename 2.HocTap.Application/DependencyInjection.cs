@@ -7,6 +7,7 @@ using HocTap.Application.Students;
 using HocTap.Application.Payments;   // 12/10/2026
 using HocTap.Application.Settings;   // 14/10/2026
 using HocTap.Application.Guests;     // 17/10/2026
+using HocTap.Application.Feedbacks;  // 18/10/2026
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HocTap.Application;
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddSingleton<SettingCache>();                      // 14/10/2026 - bộ nhớ đệm bảng giá + liên hệ (5 phút)
         services.AddScoped<ISettingServices, SettingServices>();    // 14/10/2026 - cài đặt hệ thống (admin)
         services.AddScoped<IGuestServices, GuestServices>();        // 17/10/2026 - khách học thử
+        services.AddScoped<IFeedbackServices, FeedbackServices>();  // 18/10/2026 - góp ý / báo lỗi câu hỏi
         return services;
     }
 }

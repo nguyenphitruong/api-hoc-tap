@@ -28,4 +28,16 @@ public abstract class BaseApiController : ControllerBase
 
     /// <summary>Thông báo trả về khi lỗi hệ thống (chi tiết ghi log)</summary>
     protected const string SYSTEM_ERROR = "Lỗi hệ thống, vui lòng thử lại sau.";
+
+    /// <summary>18/10/2026 - Người gọi nếu có token hợp lệ, ngược lại null (dùng cho API không bắt buộc đăng nhập như gửi góp ý)</summary>
+    protected CurrentUser? CallerOrNull
+    {
+        get
+        {
+            var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(sub, out var userId)) return null;
+            var sid = User.FindFirstValue(HocTapConst.CLAIM_STUDENT);
+            return new CurrentUser(userId, User.FindFirstValue(ClaimTypes.Role) ?? "", Guid.TryParse(sid, out var s) ? s : null);
+        }
+    }
 }

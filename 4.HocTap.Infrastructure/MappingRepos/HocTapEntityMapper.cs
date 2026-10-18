@@ -6,6 +6,7 @@ using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
 using HocTap.Domain.Aggregates.Settings;   // 14/10/2026
 using HocTap.Domain.Aggregates.Guests;     // 17/10/2026
+using HocTap.Domain.Aggregates.Feedbacks;  // 18/10/2026
 using HocTap.Infrastructure.Entities;
 
 namespace HocTap.Infrastructure.MappingRepos;
@@ -450,6 +451,58 @@ public static class HocTapEntityMapper
         _Result.userid = i_source.userid;
         _Result.linkvia = i_source.linkvia;
         _Result.linkedat = i_source.linkedat;
+        return _Result;
+    }
+
+    /// <summary>18/10/2026 - feedback -> FeedbackModel</summary>
+    public static FeedbackModel ToModel(feedback i_source)
+    {
+        FeedbackModel _Result = new FeedbackModel();
+        _Result.id = i_source.id;
+        _Result.userid = i_source.userid;
+        _Result.studentid = i_source.studentid;
+        _Result.guestid = i_source.guestid;
+        _Result.kind = i_source.kind;
+        _Result.rating = i_source.rating;
+        _Result.grade = i_source.grade;
+        _Result.subject = i_source.subject;
+        _Result.topicid = i_source.topicid;
+        _Result.question = i_source.question;
+        _Result.content = i_source.content;
+        _Result.contactok = i_source.contactok;
+        _Result.contact = i_source.contact;
+        _Result.page = i_source.page;
+        _Result.status = i_source.status;
+        _Result.adminnote = i_source.adminnote;
+        _Result.timecr = i_source.timecr;
+        _Result.timeup = i_source.timeup;
+        _Result.userup = i_source.userup;
+        return _Result;
+    }
+
+    /// <summary>18/10/2026 - FeedbackModel -> feedback (thêm mới)</summary>
+    public static feedback ToEntity(FeedbackModel i_source)
+    {
+        feedback _Result = new feedback();
+        _Result.id = i_source.id;
+        _Result.userid = i_source.userid;
+        _Result.studentid = i_source.studentid;
+        _Result.guestid = i_source.guestid;
+        _Result.kind = i_source.kind;
+        _Result.rating = i_source.rating;
+        _Result.grade = i_source.grade;
+        _Result.subject = i_source.subject;
+        _Result.topicid = i_source.topicid;
+        _Result.question = i_source.question;
+        _Result.content = i_source.content;
+        _Result.contactok = i_source.contactok;
+        _Result.contact = i_source.contact;
+        _Result.page = i_source.page;
+        _Result.status = i_source.status;
+        _Result.adminnote = i_source.adminnote;
+        _Result.timecr = i_source.timecr;
+        _Result.timeup = i_source.timeup;
+        _Result.userup = i_source.userup;
         return _Result;
     }
 }

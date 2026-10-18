@@ -6,6 +6,7 @@ using HocTap.Domain.Aggregates.Students;
 using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
 using HocTap.Domain.Aggregates.Settings;   // 14/10/2026
 using HocTap.Domain.Aggregates.Guests;     // 17/10/2026
+using HocTap.Domain.Aggregates.Feedbacks;  // 18/10/2026
 using HocTap.Domain.Bases;
 using HocTap.Infrastructure.Repositories;
 
@@ -162,6 +163,20 @@ public class UnitOfWork : IUnitOfWork
                 this.guestRepo = new GuestRepository(_context);
             }
             return guestRepo;
+        }
+    }
+
+    // 18/10/2026 - góp ý / báo lỗi câu hỏi (feedback)
+    private IFeedbackRepository? feedbackRepo;
+    public IFeedbackRepository FeedbackRepo
+    {
+        get
+        {
+            if (this.feedbackRepo == null)
+            {
+                this.feedbackRepo = new FeedbackRepository(_context);
+            }
+            return feedbackRepo;
         }
     }
 }
