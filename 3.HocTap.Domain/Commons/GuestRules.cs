@@ -29,6 +29,8 @@ public static class GuestRules
         ("intro", "Xem trang giới thiệu"), ("trial", "Bấm \"Học thử\""), ("quick", "Bắt đầu bài thử 5 câu"), ("grade", "Chọn lớp"),
         ("topic", "Mở 1 chủ đề"), ("answer", "Trả lời câu đầu tiên"), ("quickdone", "Làm xong bài thử 5 câu"), ("tencau", "Làm ≥ 10 câu"),
         ("regclick", "Bấm \"Đăng ký\""),
+        // 02/11/2026 - ôn thi cuối kì (trang /on-thi): xem đề cương → bắt đầu thi thử → làm xong thi thử
+        ("decuong", "Xem đề cương ôn thi"), ("thithu", "Bắt đầu thi thử"), ("thixong", "Làm xong thi thử"),
     };
 
     public const string VIA_REGISTER = "DANGKY";
