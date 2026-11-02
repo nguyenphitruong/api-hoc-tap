@@ -45,6 +45,8 @@ public class RulesTests
     [InlineData("g6.toan.taphop", 6, "toan", "topic")]
     [InlineData("ch:g2.anh.u3", 2, "anh", "ch")]
     [InlineData("hk:g6.toan.1", 6, "toan", "hk")]
+    [InlineData("g3.toan.cong", 3, "toan", "topic")]          // 15/10/2026: lớp 3–9
+    [InlineData("as:g9.anh.12", 9, "anh", "as")]
     public void ParseTopic_Valid(string code, short grade, string subj, string kind)
     {
         var p = AttemptRules.ParseTopic(code);
@@ -56,7 +58,7 @@ public class RulesTests
 
     [Theory]
     [InlineData("")]
-    [InlineData("g3.toan.x")]
+    [InlineData("g1.toan.x")]                                   // 15/10/2026: không có lớp 1
     [InlineData("g6.van.x")]
     [InlineData("xx:g6.toan.x")]
     [InlineData("g6.toan.<script>")]

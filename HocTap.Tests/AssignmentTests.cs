@@ -15,7 +15,7 @@ public class AssignmentTests
     private static Ctx Setup()
     {
         var e = new Env();
-        var uid = e.Auth.Register(new RegisterModel { FullName = "Bố", Email = "b@x.vn", Password = "123456" }).User.Id;
+        var uid = e.Auth.Register(new RegisterModel { FullName = "Bố", Email = "b@x.vn", Password = "123456", AcceptTerms = true }).User.Id;
         var minh = e.StudentSvc.InsertStudent(e.Parent(uid), new StudentSaveModel { NickName = "Minh", Grade = 6 }).Id;
         var na = e.StudentSvc.InsertStudent(e.Parent(uid), new StudentSaveModel { NickName = "Na", Grade = 2 }).Id;
         return new Ctx(e, uid, minh, na);

@@ -59,6 +59,21 @@ public class AdminGuestStatsReadModel
     public List<GuestCountReadModel> Grades { get; set; } = new();
     public List<GuestTopicReadModel> TopTopics { get; set; } = new();
     public List<GuestRowReadModel> Recent { get; set; } = new();
+    // 02/11/2026 - đo lường đúng: khách có thao tác thật, phễu từng bước, nguồn vào, loại máy
+    public int Engaged { get; set; }                   // có thao tác thật (có bước phễu / làm bài / gặp giới hạn)
+    public int Starters { get; set; }                  // đã trả lời ít nhất 1 câu (bước answer hoặc có lượt học)
+    public List<GuestBucketReadModel> Steps { get; set; } = new();
+    public List<GuestSourceReadModel> Sources { get; set; } = new();
+    public List<GuestSourceReadModel> Devices { get; set; } = new();
+}
+
+/// <summary>02/11/2026 - Khách theo nguồn vào / loại máy</summary>
+public class GuestSourceReadModel
+{
+    public string Key { get; set; } = "";              // google | zalo | facebook | tructiep | … · dt | mt
+    public int Guests { get; set; }
+    public int Starters { get; set; }
+    public int Registered { get; set; }
 }
 
 public class GuestDayReadModel

@@ -37,6 +37,12 @@ public static class GuestStats
         public Guid? UserId;
         public DateTime? LinkedAt;
         public int Activities => Practices + Tests;
+        // 02/11/2026
+        public HashSet<string> Steps = new();
+        public string Source = "", Device = "";
+        public DateTime? SourceAt;
+        public bool Starter => Activities > 0 || Steps.Contains("answer");
+        public bool Engaged => Activities > 0 || Locks > 0 || Steps.Count > 0;
     }
 
     public static AdminGuestStatsReadModel Build(List<GuestActivityModel> i_rows, DateTime i_nowUtc, int i_days, Func<Guid, AppUserModel?> i_user)
@@ -57,7 +63,14 @@ public static class GuestStats
             {
                 g.Status = r.linkvia ?? GuestRules.VIA_LOGIN; g.UserId = r.userid; g.LinkedAt = r.linkedat;
             }
+            // 02/11/2026: nguồn vào + loại máy lấy từ TRUYCAP sớm nhất có note "<nguồn>_<dt|mt>"
+            if (r.kind == GuestRules.KIND_VISIT && r.note != null && (g.SourceAt == null || r.timecr < g.SourceAt))
+            {
+                int k = r.note.LastIndexOf('_');
+                if (k > 0 && (r.note[(k + 1)..] == "dt" || r.note[(k + 1)..] == "mt")) { g.Source = r.note[..k]; g.Device = r.note[(k + 1)..]; g.SourceAt = r.timecr; }
+            }
             if (r.timecr < from) continue;
+            if (r.kind == GuestRules.KIND_STEP && r.note != null) g.Steps.Add(r.note);
             g.DaysIn.Add(VnDay(r.timecr));
             if (r.grade.HasValue) g.Grades.Add(r.grade.Value);
             if (r.kind == GuestRules.KIND_PRACTICE) g.Practices++;
@@ -78,6 +91,21 @@ public static class GuestStats
         _Result.ExistingUsers = guests.Count(g => g.Status == GuestRules.VIA_LOGIN);
         _Result.ConversionPct = Pct(_Result.Registered, _Result.Guests);
         _Result.LearnerConversionPct = Pct(guests.Count(g => g.Activities > 0 && g.Status == GuestRules.VIA_REGISTER), _Result.Learners);
+        _Result.Engaged = guests.Count(g => g.Engaged);
+        _Result.Starters = guests.Count(g => g.Starter);
+
+        // 02/11/2026 - phễu từng bước (số khách đã qua bước đó trong kỳ)
+        foreach (var st in GuestRules.STEPS)
+        {
+            List<Agg> lst = guests.Where(g => g.Steps.Contains(st.Code)).ToList();
+            _Result.Steps.Add(new GuestBucketReadModel { Code = st.Code, Label = st.Label, Guests = lst.Count, Registered = lst.Count(g => g.Status == GuestRules.VIA_REGISTER) });
+        }
+        // 02/11/2026 - theo nguồn vào / loại máy (chỉ khách có thao tác thật; khách cũ chưa có nguồn = "chuaro")
+        List<GuestSourceReadModel> By(Func<Agg, string> key) => guests.Where(g => g.Engaged).GroupBy(key)
+            .Select(x => new GuestSourceReadModel { Key = x.Key, Guests = x.Count(), Starters = x.Count(g => g.Starter), Registered = x.Count(g => g.Status == GuestRules.VIA_REGISTER) })
+            .OrderByDescending(x => x.Guests).ThenBy(x => x.Key).ToList();
+        _Result.Sources = By(g => g.Source == "" ? "chuaro" : g.Source);
+        _Result.Devices = By(g => g.Device == "" ? "chuaro" : g.Device);
 
         // 3. Theo ngày (giờ VN)
         DateTime day0 = VnDay(from);

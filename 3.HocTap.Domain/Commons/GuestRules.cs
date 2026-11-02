@@ -6,7 +6,8 @@ namespace HocTap.Domain.Commons;
 /// <summary>
 /// 17/10/2026 - QUY TẮC KHÁCH HỌC THỬ (guest_activity)
 /// - Mã khách: g_ + 16–40 ký tự a-z0-9 (trình duyệt tự tạo, không chứa thông tin cá nhân).
-/// - Loại hoạt động: TRUYCAP | LUYENTAP | KIEMTRA | KHOA. Số liệu ngoài khoảng hợp lý bị cắt về khoảng (không báo lỗi để web không phải xử lý).
+/// - Loại hoạt động: TRUYCAP | LUYENTAP | KIEMTRA | KHOA | BUOC (02/11/2026: bước phễu, note = mã bước).
+/// - TRUYCAP: note = "<nguồn>_<máy>" (vd google_dt, zalo_mt) — nguồn vào lần đầu, máy dt = điện thoại / mt = máy tính. Số liệu ngoài khoảng hợp lý bị cắt về khoảng (không báo lỗi để web không phải xử lý).
 /// - Gắn tài khoản: DANGKY (đăng ký mới — tính là chuyển đổi) | DANGNHAP (đăng nhập tài khoản có sẵn).
 /// </summary>
 public static class GuestRules
@@ -15,7 +16,20 @@ public static class GuestRules
     public const string KIND_PRACTICE = "LUYENTAP";
     public const string KIND_TEST = "KIEMTRA";
     public const string KIND_LOCK = "KHOA";
-    public static readonly string[] KINDS = { KIND_VISIT, KIND_PRACTICE, KIND_TEST, KIND_LOCK };
+    public const string KIND_STEP = "BUOC";              // 02/11/2026 - bước phễu học thử (note = mã bước)
+    public static readonly string[] KINDS = { KIND_VISIT, KIND_PRACTICE, KIND_TEST, KIND_LOCK, KIND_STEP };
+
+    /// <summary>
+    /// 02/11/2026 - Các bước phễu (thứ tự hiển thị), mỗi trình duyệt mỗi bước web chỉ gửi 1 lần:
+    /// intro (xem giới thiệu) → trial (bấm Học thử) → quick (bắt đầu bài thử 5 câu) → grade (chọn lớp) → topic (mở chủ đề)
+    /// → answer (trả lời câu đầu tiên) → quickdone (xong bài thử) → tencau (làm ≥ 10 câu) → regclick (bấm Đăng ký)
+    /// </summary>
+    public static readonly (string Code, string Label)[] STEPS =
+    {
+        ("intro", "Xem trang giới thiệu"), ("trial", "Bấm \"Học thử\""), ("quick", "Bắt đầu bài thử 5 câu"), ("grade", "Chọn lớp"),
+        ("topic", "Mở 1 chủ đề"), ("answer", "Trả lời câu đầu tiên"), ("quickdone", "Làm xong bài thử 5 câu"), ("tencau", "Làm ≥ 10 câu"),
+        ("regclick", "Bấm \"Đăng ký\""),
+    };
 
     public const string VIA_REGISTER = "DANGKY";
     public const string VIA_LOGIN = "DANGNHAP";
@@ -55,6 +69,8 @@ public static class GuestRules
         _Result.topicid = TOPIC_RE.IsMatch(topic) ? topic : null;
         string note = (i_event.Note ?? "").Trim().ToLowerInvariant();
         _Result.note = NOTE_RE.IsMatch(note) ? note : null;
+        // 02/11/2026: bước phễu phải là mã đã biết
+        if (kind == KIND_STEP && !STEPS.Any(x => x.Code == _Result.note)) throw new LogicException("Bước không hợp lệ.");
 
         if (kind == KIND_PRACTICE || kind == KIND_TEST)
         {
@@ -67,3 +83,4 @@ public static class GuestRules
         return _Result;
     }
 }
+

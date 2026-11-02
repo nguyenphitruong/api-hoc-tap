@@ -12,7 +12,7 @@ public class AdminTests
     private static (Env E, Guid Uid, Guid AdminId) Setup()
     {
         var e = new Env();
-        var uid = e.Auth.Register(new RegisterModel { FullName = "Phụ huynh A", Email = "a@x.vn", Password = "123456" }).User.Id;
+        var uid = e.Auth.Register(new RegisterModel { FullName = "Phụ huynh A", Email = "a@x.vn", Password = "123456", AcceptTerms = true }).User.Id;
         return (e, uid, Guid.NewGuid());
     }
 
@@ -29,12 +29,16 @@ public class AdminTests
         var (e, uid, aid) = Setup();
         var adm = e.AdminUser(aid);
         var now = e.Clock.UtcNow;
+        // 13/10/2026: chưa có hồ sơ con -> không kích hoạt được; có con -> cộng cho mọi con × 2 môn
+        Assert.Throws<LogicException>(() => e.AdminSvc.UpdatePlan(adm, uid, new AdminPlanModel { Action = HocTapConst.PLAN_ACTIVATE, Months = 1 }));
+        var st = e.StudentSvc.InsertStudent(e.Parent(uid), new StudentSaveModel { NickName = "Minh", Grade = 6 });
         var r = e.AdminSvc.UpdatePlan(adm, uid, new AdminPlanModel { Action = HocTapConst.PLAN_ACTIVATE, Months = 1, Note = "CK 50k" });
         Assert.Equal(HocTapConst.STATUS_ACTIVE, r.Status);
         Assert.Equal(now.AddMonths(1), r.PlanEnd);
         r = e.AdminSvc.UpdatePlan(adm, uid, new AdminPlanModel { Action = HocTapConst.PLAN_ACTIVATE, Months = 3 });
         Assert.Equal(now.AddMonths(1).AddMonths(3), r.PlanEnd);           // cộng nối tiếp
         Assert.Equal(2, e.AdminSvc.GetListPlanLog(adm, uid).Count);
+        Assert.Equal(2, e.Uow.Payments.Plans.Count(p => p.studentid == st.Id && p.planend == now.AddMonths(1).AddMonths(3)));
         Assert.Throws<LogicException>(() => e.AdminSvc.UpdatePlan(adm, uid, new AdminPlanModel { Action = HocTapConst.PLAN_ACTIVATE, Months = 0 }));
     }
 

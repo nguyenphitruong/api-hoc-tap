@@ -10,7 +10,7 @@ namespace HocTap.Tests;
 public class ServiceTests
 {
     private static AuthResultReadModel Register(Env e, string email = "a@x.vn") =>
-        e.Auth.Register(new RegisterModel { FullName = "Phụ huynh A", Email = email, Password = "123456" });
+        e.Auth.Register(new RegisterModel { FullName = "Phụ huynh A", Email = email, Password = "123456", AcceptTerms = true });
 
     private static AttemptSaveModel Practice(Env e, string topic = "g6.toan.taphop", long? at = null) => new()
     {

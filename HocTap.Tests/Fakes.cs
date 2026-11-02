@@ -9,6 +9,14 @@ using HocTap.Domain.Aggregates.Assignments;
 using HocTap.Domain.Aggregates.Attempts;
 using HocTap.Domain.Aggregates.Auth;
 using HocTap.Domain.Aggregates.Students;
+using HocTap.Domain.Aggregates.Payments;   // 12/10/2026
+using HocTap.Application.Payments;
+using HocTap.Application.Settings;           // 14/10/2026
+using HocTap.Domain.Aggregates.Settings;     // 14/10/2026
+using HocTap.Application.Guests;             // 17/10/2026
+using HocTap.Domain.Aggregates.Guests;       // 17/10/2026
+using HocTap.Application.Feedbacks;          // 18/10/2026
+using HocTap.Domain.Aggregates.Feedbacks;    // 18/10/2026
 using HocTap.Domain.Bases;
 using HocTap.Domain.Commons;
 
@@ -27,11 +35,16 @@ public class FakeUow : IUnitOfWork
     public FakeAttempts Attempts = new();
     public FakeAssignments Assignments;
     public FakeAdmin Admin;
+    public FakePayments Payments;   // 12/10/2026
+    public FakeSettings Settings = new();   // 14/10/2026
+    public FakeGuests Guests = new();       // 17/10/2026
+    public FakeFeedback Feedback = new();   // 18/10/2026
 
     public FakeUow()
     {
         Assignments = new FakeAssignments(Students, Attempts);
         Admin = new FakeAdmin(Users, Students, Attempts);
+        Payments = new FakePayments(Users, Students);
     }
 
     public IUserRepository UserRepo => Users;
@@ -39,6 +52,10 @@ public class FakeUow : IUnitOfWork
     public IAttemptRepository AttemptRepo => Attempts;
     public IAssignmentRepository AssignmentRepo => Assignments;
     public IAdminRepository AdminRepo => Admin;
+    public IPaymentRepository PaymentRepo => Payments;
+    public ISettingRepository SettingRepo => Settings;   // 14/10/2026
+    public IGuestRepository GuestRepo => Guests;         // 17/10/2026
+    public IFeedbackRepository FeedbackRepo => Feedback; // 18/10/2026
 
     public void InitTransaction() { }
     public void Save() { }
@@ -109,11 +126,28 @@ public class Env
     public FakeAssignments Asg => Uow.Assignments;
     public FakeAdmin Admin => Uow.Admin;
 
-    public IAuthServices Auth => new AuthServices(Uow, Tokens, Hasher, Clock);
+    public IAuthServices Auth => new AuthServices(Uow, Tokens, Hasher, Clock, GuestSvc);   // Update 17/10/2026: gắn khách học thử
+    public IGuestServices GuestSvc => new GuestServices(Uow, Clock);                       // 17/10/2026
+    public IFeedbackServices FeedbackSvc => new FeedbackServices(Uow, Clock);              // 18/10/2026
     public IStudentServices StudentSvc => new StudentServices(Uow, Hasher, Clock);
     public IAttemptServices AttemptSvc => new AttemptServices(Uow, Clock);
     public IAssignmentServices AsgSvc => new AssignmentServices(Uow, Clock);
     public IAdminServices AdminSvc => new AdminServices(Uow, Clock);
+    // 12/10/2026 - thanh toán gia hạn
+    public PaymentOptions PayOptions = new PaymentOptions
+    {
+        BankBin = "970436", BankName = "Vietcombank", AccountNo = "0123456789", AccountName = "NGUYEN VAN A", WebhookApiKey = "key-123",
+        Plans = new List<PlanPackageReadModel>
+        {
+            // 13/10/2026: gói theo số môn
+            new PlanPackageReadModel { Code = "1T1", Name = "1 môn · 1 tháng", Months = 1, Subjects = 1, Price = 39000 },
+            new PlanPackageReadModel { Code = "3T2", Name = "2 môn · 3 tháng", Months = 3, Subjects = 2, Price = 159000 },
+        },
+    };
+    public IPaymentServices PaySvc => new PaymentServices(Uow, Clock, PayOptions, Cache);
+    // 14/10/2026 - cài đặt hệ thống (bảng giá + liên hệ); bộ nhớ đệm dùng chung như singleton thật
+    public SettingCache Cache = new();
+    public ISettingServices SettingSvc => new SettingServices(Uow, Clock, PayOptions, Cache);
 
     public CurrentUser AdminUser(Guid id) => new(id, HocTapConst.ROLE_ADMIN, null);
     public CurrentUser Parent(Guid userId) => new(userId, HocTapConst.ROLE_PARENT, null);
@@ -169,4 +203,108 @@ public class FakeAdmin : IAdminRepository
     public int CountAttempt() => attempts.Rows.Count;
     public int CountAssignment() => 0;
     public List<DateTime> GetListAttemptTime(DateTime i_sinceUtc) => attempts.Rows.Where(x => x.finishedat >= i_sinceUtc).Select(x => x.finishedat).ToList();
+}
+
+/// <summary>12/10/2026 - Repository đơn gia hạn giả (giữ Model theo tham chiếu)</summary>
+public class FakePayments : IPaymentRepository
+{
+    private readonly FakeUsers users;
+    private readonly FakeStudents students;   // 13/10/2026
+    public List<PaymentOrderModel> Rows = new();
+    public List<StudentPlanModel> Plans = new();   // 13/10/2026 - student_plan
+    public FakePayments(FakeUsers i_users, FakeStudents i_students) { users = i_users; students = i_students; }
+    public void InsertOrder(PaymentOrderModel i_order) => Rows.Add(i_order);
+    public void UpdateOrder(PaymentOrderModel i_order) { }
+    public PaymentOrderModel? GetOrderById(Guid i_id) => Rows.FirstOrDefault(x => x.id == i_id);
+    public PaymentOrderModel? GetOrderByCode(string i_code) => Rows.FirstOrDefault(x => x.code == i_code);
+    public PaymentOrderModel? GetOrderByTxnRef(string i_gateway, string i_txnRef) => Rows.FirstOrDefault(x => x.gateway == i_gateway && x.txnref == i_txnRef);
+    public PaymentOrderModel? GetLastPendingOrder(Guid i_userId, string i_planCode) =>
+        Rows.Where(x => x.userid == i_userId && x.plancode == i_planCode && x.status == HocTapConst.PAY_PENDING).OrderByDescending(x => x.timecr).FirstOrDefault();
+    public List<PaymentOrderRow> GetListOrder(string? i_status, int i_max) => Rows
+        .Where(x => i_status == null || x.status == i_status)
+        .Select(x => new PaymentOrderRow { Order = x, FullName = users.Users.FirstOrDefault(u => u.id == x.userid)?.fullname ?? "" })
+        .Take(i_max).ToList();
+    // 13/10/2026 - hạn học con × môn
+    public List<StudentPlanModel> GetListStudentPlanByUser(Guid i_userId) =>
+        Plans.Where(p => students.Rows.Any(st => st.id == p.studentid && st.userid == i_userId && st.active)).ToList();
+    public List<StudentPlanModel> GetListStudentPlan(Guid i_studentId) => Plans.Where(p => p.studentid == i_studentId).ToList();
+    public void UpsertStudentPlan(StudentPlanModel i_plan)
+    {
+        StudentPlanModel? old = Plans.FirstOrDefault(p => p.studentid == i_plan.studentid && p.subject == i_plan.subject);
+        if (old == null) Plans.Add(i_plan); else { old.planend = i_plan.planend; old.timeup = i_plan.timeup; }
+    }
+}
+
+/// <summary>14/10/2026 - Bảng giá (plan_price) + tham số (sys_setting) trong bộ nhớ; Fail = giả lập chưa tạo bảng</summary>
+public class FakeSettings : ISettingRepository
+{
+    public List<PlanPriceModel> Plans = new();
+    public List<SysSettingModel> Values = new();
+    public bool Fail;
+    public int Reads;
+
+    public List<PlanPriceModel> GetListPlanPrice()
+    {
+        Reads++;
+        if (Fail) throw new InvalidOperationException("relation \"plan_price\" does not exist");
+        return Plans.OrderBy(x => x.sortorder).ThenBy(x => x.code).ToList();
+    }
+
+    public void UpsertPlanPrice(PlanPriceModel i_plan)
+    {
+        Plans.RemoveAll(x => x.code == i_plan.code);
+        Plans.Add(i_plan);
+    }
+
+    public List<SysSettingModel> GetListSetting()
+    {
+        if (Fail) throw new InvalidOperationException("relation \"sys_setting\" does not exist");
+        return Values.ToList();
+    }
+
+    public void UpsertSetting(SysSettingModel i_setting)
+    {
+        Values.RemoveAll(x => x.key == i_setting.key);
+        Values.Add(i_setting);
+    }
+}
+
+/// <summary>17/10/2026 - Hoạt động khách học thử trong bộ nhớ (cùng ngữ nghĩa GuestRepository)</summary>
+public class FakeGuests : IGuestRepository
+{
+    public List<GuestActivityModel> Rows = new();
+    public bool Fail;
+
+    public void InsertActivity(GuestActivityModel i_activity) => Rows.Add(i_activity);
+    public int CountActivitySince(string i_guestId, DateTime i_since) => Rows.Count(x => x.guestid == i_guestId && x.timecr >= i_since);
+
+    public int LinkGuest(string i_guestId, Guid i_userId, string i_via, DateTime i_now, DateTime i_since)
+    {
+        if (Fail) throw new InvalidOperationException("relation \"guest_activity\" does not exist");
+        var lst = Rows.Where(x => x.guestid == i_guestId && x.userid == null && x.timecr >= i_since).ToList();
+        foreach (var r in lst) { r.userid = i_userId; r.linkvia = i_via; r.linkedat = i_now; }
+        return lst.Count;
+    }
+
+    public List<GuestActivityModel> GetListActivitySince(DateTime i_since, int i_max)
+    {
+        var ids = Rows.Where(x => x.timecr >= i_since).Select(x => x.guestid).ToHashSet();
+        return Rows.Where(x => ids.Contains(x.guestid)).OrderByDescending(x => x.timecr).Take(i_max).ToList();
+    }
+}
+
+/// <summary>18/10/2026 - Góp ý trong bộ nhớ (cùng ngữ nghĩa FeedbackRepository)</summary>
+public class FakeFeedback : IFeedbackRepository
+{
+    public List<FeedbackModel> Rows = new();
+    public void InsertFeedback(FeedbackModel i_feedback) => Rows.Add(i_feedback);
+    public int CountFeedbackSince(Guid? i_userId, string? i_guestId, DateTime i_since)
+    {
+        if (i_userId.HasValue) return Rows.Count(x => x.timecr >= i_since && x.userid == i_userId);
+        if (!string.IsNullOrEmpty(i_guestId)) return Rows.Count(x => x.timecr >= i_since && x.guestid == i_guestId);
+        return 0;
+    }
+    public List<FeedbackModel> GetListFeedback() => Rows.OrderByDescending(x => x.timecr).ToList();
+    public FeedbackModel? GetFeedbackById(Guid i_id) => Rows.FirstOrDefault(x => x.id == i_id);
+    public void UpdateFeedback(FeedbackModel i_feedback) { }
 }
